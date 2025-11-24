@@ -1,0 +1,211 @@
+/* ===== Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== Theme Variables ===== */
+:root {
+  --bg-color: #f4f4f4;
+  --text-color: #222;
+  --primary-color: #0078d4;
+  --secondary-color: #005a9e;
+  --navbar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --border-color: #ddd;
+  --button-bg: var(--primary-color);
+  --button-text: #fff;
+  --input-bg: #fff;
+}
+
+[data-theme='dark'] {
+  --bg-color: #121212;
+  --text-color: #eaeaea;
+  --primary-color: #4cafef;
+  --secondary-color: #2196f3;
+  --navbar-bg: #1f1f1f;
+  --card-bg: #1f1f1f;
+  --border-color: #333;
+  --button-bg: var(--primary-color);
+  --button-text: #000;
+  --input-bg: #2a2a2a;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  background-color: var(--navbar-bg);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease;
+}
+
+.navbar a {
+  color: var(--text-color);
+  text-decoration: none;
+  margin-right: 16px;
+  font-weight: 500;
+}
+
+.navbar a:hover {
+  color: var(--primary-color);
+}
+
+.navbar button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.navbar button:hover {
+  background-color: var(--secondary-color);
+}
+
+/* ===== Dropdown ===== */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 150px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  text-align: left;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.dropdown-menu a:hover,
+.dropdown-menu button:hover {
+  background-color: var(--primary-color);
+  color: var(--button-text);
+}
+
+/* ===== Theme Switch ===== */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "☀️";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+input:checked+.slider {
+  background-color: var(--primary-color);
+}
+
+input:checked+.slider:before {
+  transform: translateX(26px);
+  content: "🌙";
+}
+
+/* ===== Forms ===== */
+form input,
+form select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+form button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+form button:hover {
+  background-color: var(--secondary-color);
+}
+
+/* ===== Responsive Navbar ===== */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar a,
+  .navbar button {
+    margin: 8px 0;
+  }
+}
