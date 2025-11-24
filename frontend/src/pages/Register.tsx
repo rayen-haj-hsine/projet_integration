@@ -32,33 +32,53 @@ export default function Register() {
     };
 
     return (
-        <div>
-            <h2>Register</h2>
-            <form onSubmit={handleRegister} style={{ display: 'grid', gap: '8px', maxWidth: 400 }}>
-                <input
-                    type="text"
-                    placeholder="Name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                />
-                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'driver' | 'passenger' })}>
-                    <option value="driver">Driver</option>
-                    <option value="passenger">Passenger</option>
-                </select>
-                <button type="submit">Register</button>
-            </form>
+        <div className="auth-container">
+            <div className="auth-card">
+                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Create Account</h2>
+                <form onSubmit={handleRegister} className="auth-form">
+                    <div>
+                        <label>Full Name</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. John Doe"
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Email Address</label>
+                        <input
+                            type="email"
+                            placeholder="name@example.com"
+                            value={form.email}
+                            onChange={(e) => setForm({ ...form, email: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            placeholder="Choose a strong password"
+                            value={form.password}
+                            onChange={(e) => setForm({ ...form, password: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>I am a...</label>
+                        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'driver' | 'passenger' })}>
+                            <option value="passenger">Passenger (I want to book rides)</option>
+                            <option value="driver">Driver (I want to publish rides)</option>
+                        </select>
+                    </div>
+                    <button type="submit" style={{ marginTop: '0.5rem' }}>Register</button>
+                    <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.875rem' }}>
+                        Already have an account? <a href="/login">Login</a>
+                    </p>
+                </form>
+            </div>
         </div>
     );
 }

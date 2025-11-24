@@ -27,25 +27,43 @@ export default function ChangePassword() {
     };
 
     return (
-        <div style={{ maxWidth: 400 }}>
-            <h2>Change Password</h2>
-            <form onSubmit={handleSave} style={{ display: 'grid', gap: '8px' }}>
-                <input
-                    type="password"
-                    placeholder="Current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="New password (min 6 chars)"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                />
-                <button type="submit" disabled={saving}>
-                    {saving ? 'Saving...' : 'Update Password'}
-                </button>
-            </form>
+        <div className="container">
+            <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                <div className="page-header">
+                    <h2>Change Password</h2>
+                </div>
+
+                <form onSubmit={handleSave} className="auth-form">
+                    <div>
+                        <label>Current Password</label>
+                        <input
+                            type="password"
+                            placeholder="Enter current password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>New Password</label>
+                        <input
+                            type="password"
+                            placeholder="Min 6 characters"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <button type="submit" disabled={saving} className="btn">
+                            {saving ? 'Updating...' : 'Update Password'}
+                        </button>
+                        <button type="button" onClick={() => window.history.back()} className="btn-secondary">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

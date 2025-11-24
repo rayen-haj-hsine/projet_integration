@@ -46,54 +46,75 @@ export default function Trips() {
     }, [departureCity, destinationCity, afterDate]);
 
     return (
-        <div>
-            <h2>Search Trips</h2>
-            <div style={{ marginBottom: '20px' }}>
-                <input
-                    type="text"
-                    placeholder="Departure City"
-                    value={departureCity}
-                    onChange={(e) => setDepartureCity(e.target.value)}
-                />
-                <input
-                    type="text"
-                    placeholder="Destination City"
-                    value={destinationCity}
-                    onChange={(e) => setDestinationCity(e.target.value)}
-                />
-                <input
-                    type="date"
-                    value={afterDate}
-                    onChange={(e) => setAfterDate(e.target.value)}
-                />
-                <button type="button" onClick={resetFilters}>Reset</button>
+        <div className="container">
+            <div className="page-header">
+                <h2>Find a Ride</h2>
             </div>
 
-            <h2>Available Trips</h2>
+            <div className="card" style={{ marginBottom: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                    <div>
+                        <label>From</label>
+                        <input
+                            type="text"
+                            placeholder="Departure City"
+                            value={departureCity}
+                            onChange={(e) => setDepartureCity(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label>To</label>
+                        <input
+                            type="text"
+                            placeholder="Destination City"
+                            value={destinationCity}
+                            onChange={(e) => setDestinationCity(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label>Date</label>
+                        <input
+                            type="date"
+                            value={afterDate}
+                            onChange={(e) => setAfterDate(e.target.value)}
+                        />
+                    </div>
+                    <button type="button" onClick={resetFilters} className="btn-secondary">Reset Filters</button>
+                </div>
+            </div>
+
+            <h3 style={{ marginBottom: '1.5rem' }}>Available Trips</h3>
+
             {trips.length === 0 ? (
-                <p>No trips found.</p>
+                <p>No trips found matching your criteria.</p>
             ) : (
-                <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                <div className="grid-auto-fit">
                     {trips.map((trip) => (
-                        <li
+                        <div
                             key={trip.id}
+                            className="card"
                             onClick={() => navigate(`/trips/${trip.id}`)}
-                            style={{
-                                background: 'white',
-                                padding: '15px',
-                                borderRadius: '8px',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            style={{ cursor: 'pointer' }}
                         >
-                            <strong>{trip.departure_city} → {trip.destination_city}</strong>
-                            <p>{trip.price} TND | Seats: {trip.available_seats}</p>
-                        </li>
+                            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>{trip.departure_city}</span>
+                                <span style={{ color: 'var(--text-secondary)' }}>→</span>
+                                <span>{trip.destination_city}</span>
+                            </div>
+                            <div className="card-subtitle">
+                                {new Date(trip.departure_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                                    {trip.price} TND
+                                </span>
+                                <span style={{ fontSize: '0.875rem', color: trip.available_seats > 0 ? 'var(--secondary-color)' : '#ef4444' }}>
+                                    {trip.available_seats} seats left
+                                </span>
+                            </div>
+                        </div>
                     ))}
-                </ul>
+                </div>
             )}
         </div>
     );

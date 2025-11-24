@@ -59,46 +59,45 @@ export default function Chat() {
     if (loading) return <p>Loading...</p>;
 
     return (
-        <div style={{ maxWidth: 700, margin: '20px auto' }}>
-            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8 }}>
-                <div ref={scrollRef} style={{ height: 420, overflowY: 'auto', padding: 16 }}>
+        <div className="container" style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
+            <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+                <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button onClick={() => window.history.back()} className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>←</button>
+                    <h3 style={{ margin: 0 }}>Chat</h3>
+                </div>
+
+                <div ref={scrollRef} className="chat-messages">
                     {messages.length === 0 ? (
-                        <p>No messages yet. Say hello 👋</p>
+                        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>
+                            <p>No messages yet. Say hello 👋</p>
+                        </div>
                     ) : messages.map(m => {
                         const isMine = m.sender_id === my?.id;
                         return (
-                            <div key={m.id} style={{
-                                display: 'flex',
-                                justifyContent: isMine ? 'flex-end' : 'flex-start',
-                                margin: '8px 0'
-                            }}>
+                            <div key={m.id} className={`message-bubble ${isMine ? 'message-mine' : 'message-other'}`}>
+                                <div style={{ whiteSpace: 'pre-wrap' }}>{m.message}</div>
                                 <div style={{
-                                    maxWidth: '70%',
-                                    padding: '8px 12px',
-                                    borderRadius: 12,
-                                    background: isMine ? 'var(--primary-color)' : 'var(--dropdown-bg)',
-                                    color: isMine ? 'var(--button-text)' : 'var(--text-color)',
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                                    textAlign: 'right',
+                                    marginTop: '0.25rem',
+                                    fontSize: '0.7rem',
+                                    opacity: 0.8
                                 }}>
-                                    <div style={{ whiteSpace: 'pre-wrap' }}>{m.message}</div>
-                                    <div style={{ textAlign: 'right', marginTop: 4 }}>
-                                        <small>{new Date(m.created_at).toLocaleString()}</small>
-                                    </div>
+                                    {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
                         );
                     })}
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border-color)', padding: 12, display: 'flex', gap: 8 }}>
+                <div className="chat-input-area">
                     <input
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="Type a message..."
-                        style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-color)' }}
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     />
-                    <button onClick={sendMessage}>Send</button>
+                    <button onClick={sendMessage} disabled={!text.trim()}>Send</button>
                 </div>
             </div>
         </div>

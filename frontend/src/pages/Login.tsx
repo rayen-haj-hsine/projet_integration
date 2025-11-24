@@ -26,13 +26,36 @@ export default function Login() {
     };
 
     return (
-        <div>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin} style={{ display: 'grid', gap: '8px', maxWidth: 400 }}>
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <button type="submit">Login</button>
-            </form>
+        <div className="auth-container">
+            <div className="auth-card">
+                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Welcome Back</h2>
+                <form onSubmit={handleLogin} className="auth-form">
+                    <div>
+                        <label>Email Address</label>
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <button type="submit" style={{ marginTop: '0.5rem' }}>Sign In</button>
+                    <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.875rem' }}>
+                        Don't have an account? <a href="/register">Register</a>
+                    </p>
+                </form>
+            </div>
         </div>
     );
 }

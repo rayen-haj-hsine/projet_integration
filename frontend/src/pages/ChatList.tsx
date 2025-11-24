@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
 
@@ -24,27 +24,61 @@ export default function ChatList() {
     if (loading) return <p>Loading...</p>;
 
     return (
-        <div style={{ maxWidth: 600, margin: '20px auto', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 16 }}>
-            <h2 style={{ marginBottom: 12 }}>Chat Contacts</h2>
-            {contacts.length === 0 ? (
-                <p>No contacts. You can chat with drivers/passengers once there is a reservation.</p>
-            ) : (
-                <ul style={{ listStyle: 'none' }}>
-                    {contacts.map(c => (
-                        <li key={c.contact_id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <strong>{c.name}</strong><br />
-                                    <small>{c.email} {c.phone ? `• ${c.phone}` : ''}</small>
+        <div className="container">
+            <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <div className="page-header">
+                    <h2>Messages</h2>
+                </div>
+
+                {contacts.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                        <p>No contacts yet.</p>
+                        <p style={{ fontSize: '0.875rem' }}>You can chat with drivers or passengers once you have a confirmed reservation.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {contacts.map(c => (
+                            <Link
+                                key={c.contact_id}
+                                to={`/chats/${c.contact_id}`}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '1rem',
+                                    borderBottom: '1px solid var(--border-color)',
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'var(--primary-color)',
+                                        color: 'white',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {c.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</div>
+                                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{c.email}</div>
+                                    </div>
                                 </div>
-                                <Link to={`/chats/${c.contact_id}`}>
-                                    <button>Open Chat</button>
-                                </Link>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            )}
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '1.5rem' }}>›</span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

@@ -14,6 +14,8 @@ import ChatList from './pages/ChatList';
 import Chat from './pages/Chat';
 import './index.css';
 
+
+
 export const ThemeContext = React.createContext({
   theme: 'light',
   toggleTheme: () => { }
@@ -23,10 +25,12 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const token = localStorage.getItem('token');
 
+
   useEffect(() => {
-    document.body.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme); // ✅ Use <html>
     localStorage.setItem('theme', theme);
   }, [theme]);
+
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 

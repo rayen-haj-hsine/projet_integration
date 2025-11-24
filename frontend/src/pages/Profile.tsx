@@ -88,26 +88,46 @@ export default function Profile() {
     if (!user) return <p>No profile found.</p>;
 
     return (
-        <div style={{ maxWidth: 500 }}>
-            <h2>My Profile</h2>
+        <div className="container">
+            <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <div className="page-header">
+                    <h2>My Profile</h2>
+                </div>
 
-            {!isEditing ? (
-                <>
-                    <p><strong>Name:</strong> {user.name}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Phone:</strong> {user.phone ?? '-'}</p>
-                    <p><strong>Role:</strong> {user.role}</p>
-                    {user.created_at && <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => setIsEditing(true)}>Edit</button>
-                        <button onClick={() => navigate('/profile/password')}>Change Password</button>
+                {!isEditing ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Name:</span>
+                            <span style={{ fontWeight: 600 }}>{user.name}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Email:</span>
+                            <span>{user.email}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Phone:</span>
+                            <span>{user.phone ?? '-'}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Role:</span>
+                            <span style={{ textTransform: 'capitalize' }}>{user.role}</span>
+                        </div>
+                        {user.created_at && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Joined:</span>
+                                <span>{new Date(user.created_at).toLocaleDateString()}</span>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button onClick={() => setIsEditing(true)} className="btn">Edit Profile</button>
+                            <button onClick={() => navigate('/profile/password')} className="btn btn-secondary">Change Password</button>
+                        </div>
                     </div>
-                </>
-            ) : (
-                <>
-                    <div style={{ display: 'grid', gap: '8px' }}>
-                        <label>
-                            Name
+                ) : (
+                    <div className="auth-form">
+                        <div>
+                            <label>Full Name</label>
                             <input
                                 name="name"
                                 type="text"
@@ -115,9 +135,9 @@ export default function Profile() {
                                 onChange={handleChange}
                                 placeholder="Your full name"
                             />
-                        </label>
-                        <label>
-                            Email
+                        </div>
+                        <div>
+                            <label>Email Address</label>
                             <input
                                 name="email"
                                 type="email"
@@ -125,9 +145,9 @@ export default function Profile() {
                                 onChange={handleChange}
                                 placeholder="your@email.com"
                             />
-                        </label>
-                        <label>
-                            Phone
+                        </div>
+                        <div>
+                            <label>Phone Number</label>
                             <input
                                 name="phone"
                                 type="text"
@@ -135,33 +155,33 @@ export default function Profile() {
                                 onChange={handleChange}
                                 placeholder="+216 ..."
                             />
-                        </label>
-                        <label>
-                            Role
-                            <input type="text" value={user.role} disabled />
-                        </label>
-                    </div>
+                        </div>
+                        <div>
+                            <label>Role</label>
+                            <input type="text" value={user.role} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+                        </div>
 
-                    <div style={{ marginTop: 12 }}>
-                        <button onClick={handleSave} disabled={saving}>
-                            {saving ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                            onClick={() => {
-                                setForm({
-                                    name: user.name ?? '',
-                                    email: user.email ?? '',
-                                    phone: user.phone ?? ''
-                                });
-                                setIsEditing(false);
-                            }}
-                            style={{ marginLeft: 8 }}
-                        >
-                            Cancel
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button onClick={handleSave} disabled={saving} className="btn">
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setForm({
+                                        name: user.name ?? '',
+                                        email: user.email ?? '',
+                                        phone: user.phone ?? ''
+                                    });
+                                    setIsEditing(false);
+                                }}
+                                className="btn btn-secondary"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                </>
-            )}
+                )}
+            </div>
         </div>
     );
 }

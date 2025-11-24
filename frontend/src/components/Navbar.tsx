@@ -38,48 +38,54 @@ export default function Navbar() {
 
     return (
         <nav className="navbar">
-            {token ? (
-                <>
-                    <div className="navbar-left">
-                        <Link to="/">Trips</Link>
-                    </div>
-                    <div className="navbar-right">
-                        <div className="dropdown">
-                            <button
-                                className="dropdown-toggle"
-                                onClick={() => setDropdownOpen(!dropdownOpen)}
-                            >
-                                Hello, {name || 'User'} ▼
-                            </button>
-                            {dropdownOpen && (
-                                <div className="dropdown-menu">
-                                    <Link to="/profile" onClick={() => setDropdownOpen(false)}>Profile</Link>
-                                    <Link to="/reservations" onClick={() => setDropdownOpen(false)}>My Reservations</Link>
-                                    <Link to="/chats" onClick={() => setDropdownOpen(false)}>Chat</Link>
-                                    <button onClick={handleLogout}>Logout</button>
-                                </div>
-                            )}
+            <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 0 }}>
+                <div className="navbar-left">
+                    <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
+                        TripShare
+                    </Link>
+                    {token && (
+                        <Link to="/" className={window.location.pathname === '/' ? 'active' : ''}>Find a Ride</Link>
+                    )}
+                </div>
+
+                <div className="navbar-right">
+                    {token ? (
+                        <>
+                            <div className="dropdown">
+                                <button
+                                    className="dropdown-toggle"
+                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                                >
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                        {name ? name.charAt(0).toUpperCase() : 'U'}
+                                    </div>
+                                    <span>{name || 'User'}</span>
+                                    <span style={{ fontSize: '0.75rem' }}>▼</span>
+                                </button>
+                                {dropdownOpen && (
+                                    <div className="dropdown-menu">
+                                        <Link to="/profile" onClick={() => setDropdownOpen(false)}>Profile</Link>
+                                        <Link to="/reservations" onClick={() => setDropdownOpen(false)}>My Reservations</Link>
+                                        <Link to="/chats" onClick={() => setDropdownOpen(false)}>Messages</Link>
+                                        <button onClick={handleLogout}>Logout</button>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <Link to="/login">Login</Link>
+                            <Link to="/register" className="btn" style={{ color: 'white', textDecoration: 'none' }}>Register</Link>
                         </div>
-                        <label className="theme-switch" title="Toggle theme">
-                            <input type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
-                            <span className="slider"></span>
-                        </label>
-                    </div>
-                </>
-            ) : (
-                <>
-                    <div className="navbar-left">
-                        <Link to="/login">Login</Link>
-                        <Link to="/register">Register</Link>
-                    </div>
-                    <div className="navbar-right">
-                        <label className="theme-switch" title="Toggle theme">
-                            <input type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
-                            <span className="slider"></span>
-                        </label>
-                    </div>
-                </>
-            )}
+                    )}
+
+                    <label className="theme-switch" title="Toggle theme" style={{ marginLeft: '1rem' }}>
+                        <input type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
+                        <span className="slider"></span>
+                    </label>
+                </div>
+            </div>
         </nav>
     );
 }
