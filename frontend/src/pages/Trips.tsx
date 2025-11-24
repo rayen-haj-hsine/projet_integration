@@ -5,11 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 interface Trip {
     id: number;
+    driver_id: number;               // ✅ needed to filter out own trips
     departure_city: string;
     destination_city: string;
     departure_date: string;
     price: number;
     available_seats: number;
+    status?: string;
 }
 
 export default function Trips() {
@@ -19,15 +21,37 @@ export default function Trips() {
     const [afterDate, setAfterDate] = useState('');
     const navigate = useNavigate();
 
+    // read current user (id + role) from localStorage
+    const currentUser = (() => {
+        try {
+            return JSON.parse(localStorage.getItem('user') || '{}');
+        } catch {
+            return {};
+        }
+    })();
+
     const fetchTrips = () => {
-        const params: any = {};
+        const params: Record<string, string> = {};
         if (departureCity) params.departure_city = departureCity;
         if (destinationCity) params.destination_city = destinationCity;
-        if (afterDate) params.from_date = afterDate;
+        if (afterDate) params.from_date = afterDate; // HTML <input type="date"> gives YYYY-MM-DD
 
-        api.get('/trips', { params })
-            .then((res) => setTrips(res.data.results))
-            .catch(console.error);
+        api
+            .get('/trips', { params })
+            .then((res) => {
+                let results: Trip[] = res.data?.results ?? [];
+
+                // ✅ Hide trips published by the logged-in driver (client-side safeguard)
+                if (currentUser?.role === 'driver' && typeof currentUser?.id === 'number') {
+                    results = results.filter((t) => t.driver_id !== currentUser.id);
+                }
+
+                setTrips(results);
+            })
+            .catch((err) => {
+                console.error(err);
+                alert('Failed to load trips');
+            });
     };
 
     const resetFilters = () => {
@@ -37,12 +61,16 @@ export default function Trips() {
         fetchTrips();
     };
 
+    // Initial load
     useEffect(() => {
         fetchTrips();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Re-fetch when filters change
     useEffect(() => {
         fetchTrips();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [departureCity, destinationCity, afterDate]);
 
     return (
@@ -52,7 +80,14 @@ export default function Trips() {
             </div>
 
             <div className="card" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem',
+                        alignItems: 'end',
+                    }}
+                >
                     <div>
                         <label>From</label>
                         <input
@@ -79,7 +114,9 @@ export default function Trips() {
                             onChange={(e) => setAfterDate(e.target.value)}
                         />
                     </div>
-                    <button type="button" onClick={resetFilters} className="btn-secondary">Reset Filters</button>
+                    <button type="button" onClick={resetFilters} className="btn-secondary">
+                        Reset Filters
+                    </button>
                 </div>
             </div>
 
@@ -96,19 +133,49 @@ export default function Trips() {
                             onClick={() => navigate(`/trips/${trip.id}`)}
                             style={{ cursor: 'pointer' }}
                         >
-                            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div
+                                className="card-title"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
                                 <span>{trip.departure_city}</span>
                                 <span style={{ color: 'var(--text-secondary)' }}>→</span>
                                 <span>{trip.destination_city}</span>
                             </div>
                             <div className="card-subtitle">
-                                {new Date(trip.departure_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                {new Date(trip.departure_date).toLocaleDateString(undefined, {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginTop: '1rem',
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontSize: '1.25rem',
+                                        fontWeight: 'bold',
+                                        color: 'var(--primary-color)',
+                                    }}
+                                >
                                     {trip.price} TND
                                 </span>
-                                <span style={{ fontSize: '0.875rem', color: trip.available_seats > 0 ? 'var(--secondary-color)' : '#ef4444' }}>
+                                <span
+                                    style={{
+                                        fontSize: '0.875rem',
+                                        color:
+                                            trip.available_seats > 0
+                                                ? 'var(--secondary-color)'
+                                                : '#ef4444',
+                                    }}
+                                >
                                     {trip.available_seats} seats left
                                 </span>
                             </div>

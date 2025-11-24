@@ -59,6 +59,12 @@ export async function searchTrips(req, res, next) {
             filters.push('departure_date <= ?');
             params.push(req.query.to_date);
         }
+
+        if (req.user && req.user.role === 'driver') {
+            filters.push('driver_id != ?');
+            params.push(req.user.id);
+        }
+
         filters.push("status = 'open'");
 
         const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
@@ -95,3 +101,18 @@ export async function getTripById(req, res, next) {
         next(err);
     }
 }
+
+export async function listMyTrips(req, res, next) {
+    try {
+        const driverId = req.user.id;
+        const [rows] = await pool.query(
+            `SELECT id, departure_city, destination_city, departure_date, price, available_seats, status
+             FROM trips WHERE driver_id = ? ORDER BY departure_date ASC`,
+            [driverId]
+        );
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+}
+
