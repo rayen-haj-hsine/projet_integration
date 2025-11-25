@@ -34,6 +34,11 @@ export async function createReservation(req, res, next) {
         const trip = trips[0];
         if (trip.status !== 'open') return res.status(400).json({ error: 'Trip is not open' });
 
+        // Prevent driver from booking own trip
+        if (trip.driver_id === passenger_id) {
+            return res.status(403).json({ error: 'Drivers cannot book their own trips' });
+        }
+
         // Prevent duplicate active reservation
         const [existing] = await pool.query(
             'SELECT id FROM reservations WHERE trip_id = ? AND passenger_id = ? AND status IN ("pending","confirmed")',
@@ -170,7 +175,7 @@ export async function listMyReservations(req, res, next) {
         const userId = req.user.id;
 
         const [rows] = await pool.query(
-            `SELECT r.id, r.status, r.created_at,
+            `SELECT r.id, r.trip_id, r.status, r.created_at,
               t.departure_city, t.destination_city, t.departure_date, t.price,
               u.name AS passenger_name
        FROM reservations r

@@ -33,25 +33,43 @@ export default function ChangePassword() {
                     <h2>Change Password</h2>
                 </div>
 
-                <form onSubmit={handleSave} className="auth-form">
+                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
-                        <label>Current Password</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Current Password</label>
                         <input
                             type="password"
                             placeholder="Enter current password"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             required
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--input-bg)',
+                                color: 'var(--text-primary)',
+                                fontSize: '1rem'
+                            }}
                         />
                     </div>
                     <div>
-                        <label>New Password</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>New Password</label>
                         <input
                             type="password"
                             placeholder="Min 6 characters"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             required
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--input-bg)',
+                                color: 'var(--text-primary)',
+                                fontSize: '1rem'
+                            }}
                         />
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

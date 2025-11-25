@@ -1,5 +1,5 @@
 
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../App';
 import api from '../api/axios';
@@ -10,7 +10,11 @@ export default function Navbar() {
     const token = localStorage.getItem('token');
     const [name, setName] = useState<string | null>(null);
     const [role, setRole] = useState<string | null>(null);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // Notification state
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (token) {
@@ -29,6 +33,19 @@ export default function Navbar() {
                     localStorage.setItem('user', JSON.stringify(res.data));
                 }).catch(() => { });
             }
+
+            // Poll notifications
+            const fetchNotifs = () => {
+                api.get('/notifications')
+                    .then(res => {
+                        setNotifications(res.data);
+                        setUnreadCount(res.data.filter((n: any) => !n.is_read).length);
+                    })
+                    .catch(() => { });
+            };
+            fetchNotifs();
+            const interval = setInterval(fetchNotifs, 10000);
+            return () => clearInterval(interval);
         }
     }, [token]);
 
@@ -40,89 +57,380 @@ export default function Navbar() {
         navigate('/login');
     };
 
-    return (
-        <nav className="navbar">
-            <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 0 }}>
-                {/* Left Section */}
-                <div className="navbar-left" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', textDecoration: 'none' }}>
-                        TripShare
-                    </Link>
-                    {
-                        token && role === 'driver' && (
-                            <>
-                                <Link to="/publish-trip" className={window.location.pathname === '/publish-trip' ? 'active' : ''}>
-                                    Publish Trip
-                                </Link>
-                                <Link to="/my-trips" className={window.location.pathname === '/my-trips' ? 'active' : ''}>
-                                    My Trips
-                                </Link>
-                            </>
-                        )}
+    const markAsRead = (id: number) => {
+        api.patch(`/notifications/${id}/read`)
+            .then(() => {
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            })
+            .catch(() => { });
+    };
 
+    return (
+        <nav style={{
+            backgroundColor: 'var(--card-bg)',
+            borderBottom: '1px solid var(--border-color)',
+            padding: '0.75rem 0',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        }}>
+            <div className="container" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                maxWidth: '1400px',
+                margin: '0 auto',
+                padding: '0 1.5rem'
+            }}>
+                {/* Left Section - Logo & Main Links */}
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                    <Link
+                        to="/"
+                        style={{
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        🚗 TripShare
+                    </Link>
+
+                    {token && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <Link
+                                to="/"
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    color: window.location.pathname === '/' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    backgroundColor: window.location.pathname === '/' ? 'var(--bg-color)' : 'transparent',
+                                    fontWeight: window.location.pathname === '/' ? 600 : 500,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                🔍 Browse Trips
+                            </Link>
+
+                            {role === 'driver' && (
+                                <>
+                                    <Link
+                                        to="/publish-trip"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/publish-trip' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/publish-trip' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/publish-trip' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        ➕ Publish Trip
+                                    </Link>
+                                    <Link
+                                        to="/my-trips"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/my-trips' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/my-trips' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/my-trips' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        🚙 My Trips
+                                    </Link>
+                                </>
+                            )}
+
+                            <Link
+                                to="/reservations"
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    color: window.location.pathname === '/reservations' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    backgroundColor: window.location.pathname === '/reservations' ? 'var(--bg-color)' : 'transparent',
+                                    fontWeight: window.location.pathname === '/reservations' ? 600 : 500,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                📋 Reservations
+                            </Link>
+
+                            <Link
+                                to="/chats"
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    color: window.location.pathname === '/chats' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    backgroundColor: window.location.pathname === '/chats' ? 'var(--bg-color)' : 'transparent',
+                                    fontWeight: window.location.pathname === '/chats' ? 600 : 500,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                💬 Messages
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Section */}
-                <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {/* Right Section - User Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {token ? (
                         <>
-                            <div className="dropdown" style={{ position: 'relative' }}>
+                            {/* Notification Bell */}
+                            <div style={{ position: 'relative' }}>
                                 <button
-                                    className="dropdown-toggle"
-                                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: 'none', border: 'none' }}
-                                >
-                                    <div style={{
-                                        width: '32px',
-                                        height: '32px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'var(--primary-color)',
-                                        color: 'white',
+                                    onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                                    style={{
+                                        background: 'var(--bg-color)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '1.25rem',
+                                        position: 'relative',
+                                        padding: '0.5rem 0.75rem',
+                                        transition: 'all 0.2s ease',
                                         display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {name ? name.charAt(0).toUpperCase() : 'U'}
-                                    </div>
-                                    <span>{name || 'User'}</span>
-                                    <span style={{ fontSize: '0.75rem' }}>▼</span>
+                                        alignItems: 'center'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-bg)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                >
+                                    🔔
+                                    {unreadCount > 0 && (
+                                        <span style={{
+                                            position: 'absolute',
+                                            top: -5,
+                                            right: -5,
+                                            backgroundColor: '#ef4444',
+                                            color: 'white',
+                                            borderRadius: '999px',
+                                            minWidth: '20px',
+                                            height: '20px',
+                                            fontSize: '0.7rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: 'bold',
+                                            padding: '0 5px',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                        }}>
+                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        </span>
+                                    )}
                                 </button>
-                                {dropdownOpen && (
-                                    <div className="dropdown-menu" style={{
+                                {notifDropdownOpen && (
+                                    <div style={{
                                         position: 'absolute',
                                         right: 0,
-                                        top: '100%',
+                                        top: 'calc(100% + 8px)',
+                                        width: '360px',
                                         backgroundColor: 'var(--card-bg)',
                                         border: '1px solid var(--border-color)',
-                                        padding: '10px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '8px',
-                                        minWidth: '150px',
-                                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                                        zIndex: 1000
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                        zIndex: 1000,
+                                        maxHeight: '450px',
+                                        overflowY: 'auto'
                                     }}>
-                                        <Link to="/profile" onClick={() => setDropdownOpen(false)}>Profile</Link>
-                                        <Link to="/reservations" onClick={() => setDropdownOpen(false)}>My Reservations</Link>
-                                        <Link to="/chats" onClick={() => setDropdownOpen(false)}>Messages</Link>
-                                        <button onClick={handleLogout} style={{ textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>Logout</button>
+                                        <div style={{
+                                            padding: '1rem',
+                                            borderBottom: '1px solid var(--border-color)',
+                                            fontWeight: 'bold',
+                                            fontSize: '1.1rem'
+                                        }}>
+                                            Notifications {unreadCount > 0 && `(${unreadCount})`}
+                                        </div>
+                                        {notifications.length === 0 ? (
+                                            <div style={{
+                                                padding: '2rem',
+                                                textAlign: 'center',
+                                                color: 'var(--text-secondary)',
+                                                fontSize: '0.95rem'
+                                            }}>
+                                                No notifications yet
+                                            </div>
+                                        ) : (
+                                            notifications.map(n => (
+                                                <div
+                                                    key={n.id}
+                                                    onClick={() => !n.is_read && markAsRead(n.id)}
+                                                    style={{
+                                                        padding: '1rem',
+                                                        borderBottom: '1px solid var(--border-color)',
+                                                        backgroundColor: n.is_read ? 'transparent' : 'var(--bg-color)',
+                                                        cursor: n.is_read ? 'default' : 'pointer',
+                                                        opacity: n.is_read ? 0.7 : 1,
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => !n.is_read && (e.currentTarget.style.backgroundColor = 'var(--card-bg)')}
+                                                    onMouseLeave={(e) => !n.is_read && (e.currentTarget.style.backgroundColor = 'var(--bg-color)')}
+                                                >
+                                                    <div style={{ fontSize: '0.95rem', lineHeight: '1.4' }}>{n.message}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                                                        {new Date(n.created_at).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </div>
+
+                            {/* User Profile Section */}
+                            <Link
+                                to="/profile"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.75rem',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    backgroundColor: window.location.pathname === '/profile' ? 'var(--bg-color)' : 'transparent',
+                                    border: '1px solid var(--border-color)',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = window.location.pathname === '/profile' ? 'var(--bg-color)' : 'transparent'}
+                            >
+                                <div style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)',
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem'
+                                }}>
+                                    {name ? name.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                                        {name || 'User'}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                                        {role || 'Member'}
+                                    </span>
+                                </div>
+                            </Link>
+
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={toggleTheme}
+                                style={{
+                                    background: 'var(--bg-color)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    padding: '0.5rem 0.75rem',
+                                    fontSize: '1.25rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-bg)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                title="Toggle theme"
+                            >
+                                {theme === 'dark' ? '🌞' : '🌙'}
+                            </button>
+
+                            {/* Logout Button */}
+                            <button
+                                onClick={handleLogout}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'transparent',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    fontWeight: 500,
+                                    fontSize: '0.95rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                    e.currentTarget.style.borderColor = '#dc2626';
+                                    e.currentTarget.style.color = '#dc2626';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                }}
+                            >
+                                Logout
+                            </button>
                         </>
                     ) : (
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <Link to="/login">Login</Link>
-                            <Link to="/register" className="btn" style={{ color: 'white', textDecoration: 'none', backgroundColor: 'var(--primary-color)', padding: '6px 12px', borderRadius: '4px' }}>Register</Link>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={toggleTheme}
+                                style={{
+                                    background: 'var(--bg-color)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    padding: '0.5rem 0.75rem',
+                                    fontSize: '1.25rem',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-bg)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-color)'}
+                                title="Toggle theme"
+                            >
+                                {theme === 'dark' ? '🌞' : '🌙'}
+                            </button>
+
+                            <Link
+                                to="/login"
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                Login
+                            </Link>
+                            <Link
+                                to="/register"
+                                style={{
+                                    padding: '0.5rem 1.25rem',
+                                    borderRadius: '8px',
+                                    textDecoration: 'none',
+                                    color: 'white',
+                                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                Get Started
+                            </Link>
                         </div>
                     )}
-
-                    {/* Theme Toggle */}
-                    <label className="theme-switch" title="Toggle theme" style={{ marginLeft: '1rem' }}>
-                        <input type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
-                        <span className="slider"></span>
-                    </label>
                 </div>
             </div>
         </nav>

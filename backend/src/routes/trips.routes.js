@@ -1,13 +1,12 @@
-
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { createTrip, searchTrips, getTripById, listMyTrips } from '../controllers/trips.controller.js';
+import { createTrip, searchTrips, getTripById, listMyTrips, deleteTrip } from '../controllers/trips.controller.js';
 const router = Router();
 
 router.get('/', searchTrips);
+router.get('/my', requireAuth, requireRole('driver'), listMyTrips);
 router.get('/:id', getTripById);
 router.post('/', requireAuth, requireRole('driver'), createTrip);
-
-router.get('/my', requireAuth, requireRole('driver'), listMyTrips); // ✅ New route
+router.delete('/:id', requireAuth, requireRole('driver'), deleteTrip);
 
 export default router;

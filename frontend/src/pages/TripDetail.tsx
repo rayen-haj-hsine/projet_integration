@@ -14,13 +14,34 @@ interface TripDetail {
     driver_phone: string;
 }
 
+interface RatingData {
+    id: number;
+    rating: number;
+    comment: string;
+    created_at: string;
+    user_name: string;
+}
+
+interface RatingsResponse {
+    tripId: number;
+    averageRating: number;
+    totalRatings: number;
+    ratings: RatingData[];
+}
+
 export default function TripDetails() {
     const { id } = useParams();
     const [trip, setTrip] = useState<TripDetail | null>(null);
+    const [ratingsData, setRatingsData] = useState<RatingsResponse | null>(null);
 
     useEffect(() => {
         api.get(`/trips/${id}`)
             .then((res) => setTrip(res.data))
+            .catch(console.error);
+
+        // Fetch ratings for this trip
+        api.get(`/ratings/trip/${id}`)
+            .then((res) => setRatingsData(res.data))
             .catch(console.error);
     }, [id]);
 
@@ -28,16 +49,25 @@ export default function TripDetails() {
         try {
             await api.post('/reservations', { trip_id: parseInt(id!) });
             alert('Reservation created!');
+            window.location.reload(); // Auto-refresh to show updated seats
         } catch (err: any) {
             alert(err.response?.data?.error || 'Booking failed');
         }
+    };
+
+    const renderStars = (rating: number) => {
+        return (
+            <span style={{ color: '#fbbf24', fontSize: '1.2rem' }}>
+                {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+            </span>
+        );
     };
 
     if (!trip) return <p>Loading...</p>;
 
     return (
         <div className="container">
-            <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div className="card" style={{ maxWidth: '700px', margin: '0 auto' }}>
                 <div className="page-header">
                     <h2>Trip Details</h2>
                 </div>
@@ -78,6 +108,40 @@ export default function TripDetails() {
                         </div>
                     </div>
                 </div>
+
+                {/* Ratings Section */}
+                {ratingsData && ratingsData.totalRatings > 0 && (
+                    <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>
+                            Ratings
+                            <span style={{ marginLeft: '0.5rem', color: '#fbbf24', fontSize: '1.2rem' }}>
+                                {ratingsData.averageRating.toFixed(1)} ★
+                            </span>
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                ({ratingsData.totalRatings} {ratingsData.totalRatings === 1 ? 'review' : 'reviews'})
+                            </span>
+                        </h4>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {ratingsData.ratings.map((rating) => (
+                                <div key={rating.id} style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontWeight: 500 }}>{rating.user_name}</span>
+                                        {renderStars(rating.rating)}
+                                    </div>
+                                    {rating.comment && (
+                                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                            {rating.comment}
+                                        </p>
+                                    )}
+                                    <p style={{ margin: 0, marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                        {new Date(rating.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <button onClick={bookTrip} className="btn" style={{ width: '100%', padding: '1rem', fontSize: '1rem' }} disabled={trip.available_seats === 0}>
                     {trip.available_seats > 0 ? 'Book This Trip' : 'Sold Out'}

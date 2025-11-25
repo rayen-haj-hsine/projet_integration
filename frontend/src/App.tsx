@@ -44,21 +44,97 @@ function App() {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <Router>
+        {/* Background decorative elements */}
+        <div className="background-effects">
+          <div className="blob-2"></div>
+          <div className="blob-3"></div>
+          <div className="road-marker-right"></div>
+          {/* Stars twinkling in the sky */}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="sparkle"
+              style={{
+                top: `${Math.random() * 50}%`, // Only in top half (sky)
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1.5 + Math.random() * 1.5}s`
+              }}
+            />
+          ))}
+        </div>
+
         <Navbar />
         <Routes>
-          <Route path="/" element={token ? <Trips /> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<Trips />} />
+          <Route path="/login" element={token ? <Navigate to="/" /> : <Login />} />
+          <Route path="/register" element={token ? <Navigate to="/" /> : <Register />} />
           <Route path="/trips/:id" element={<TripDetails />} />
-          <Route path="/my-trips" element={<ProtectedRoute><MyTrips /></ProtectedRoute>} />
-          <Route path="/my-trips" element={<ProtectedRoute><MyTrips /></ProtectedRoute>} />
+          <Route
+            path="/my-trips"
+            element={
+              <ProtectedRoute>
+                <MyTrips />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/profile/password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-          <Route path="/chats" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
-          <Route path="/chats/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-          <Route path="/publish-trip" element={<ProtectedRoute><PublishTrip /></ProtectedRoute>} />
+          <Route
+            path="/reservations"
+            element={
+              <ProtectedRoute>
+                <Reservations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/password"
+            element={
+              <ProtectedRoute>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <ChatList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats/:userId"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/publish-trip"
+            element={
+              <ProtectedRoute>
+                <PublishTrip />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
     </ThemeContext.Provider>

@@ -9,6 +9,7 @@ import tripsRoutes from './routes/trips.routes.js';
 import reservationsRoutes from './routes/reservations.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import chatsRoutes from './routes/chats.routes.js'; // ✅ Add this import
+import ratingsRoutes from './routes/ratings.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './docs/openapi.js';
 
@@ -32,6 +33,7 @@ app.use('/api/trips', tripsRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/chats', chatsRoutes); // ✅ Now safe
+app.use('/api/ratings', ratingsRoutes);
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ error: 'Not Found' }));

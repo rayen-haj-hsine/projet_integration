@@ -116,3 +116,60 @@ export async function listMyTrips(req, res, next) {
     }
 }
 
+
+export async function deleteTrip(req, res, next) {
+    try {
+        const tripId = parseInt(req.params.id, 10);
+        const driverId = req.user.id;
+
+        // Verify trip exists and belongs to driver
+        const [trips] = await pool.query(
+            'SELECT id, driver_id, departure_city, destination_city, departure_date FROM trips WHERE id = ?',
+            [tripId]
+        );
+
+        if (!trips.length) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        if (trips[0].driver_id !== driverId) {
+            return res.status(403).json({ error: 'You can only delete your own trips' });
+        }
+
+        const trip = trips[0];
+
+        // Get all passengers with reservations for this trip
+        const [reservations] = await pool.query(
+            'SELECT passenger_id FROM reservations WHERE trip_id = ?',
+            [tripId]
+        );
+
+        // Notify all passengers about trip deletion
+        if (reservations.length > 0) {
+            const notificationMessage = `Trip from ${trip.departure_city} to ${trip.destination_city} on ${new Date(trip.departure_date).toLocaleDateString()} has been deleted by the driver`;
+
+            for (const reservation of reservations) {
+                await pool.query(
+                    'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "trip_deletion", 0)',
+                    [reservation.passenger_id, notificationMessage]
+                );
+            }
+
+            // Delete all reservations for this trip
+            await pool.query('DELETE FROM reservations WHERE trip_id = ?', [tripId]);
+        }
+
+        // Delete the trip
+        await pool.query('DELETE FROM trips WHERE id = ?', [tripId]);
+
+        res.json({
+            success: true,
+            message: 'Trip deleted successfully',
+            notifiedPassengers: reservations.length
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+
