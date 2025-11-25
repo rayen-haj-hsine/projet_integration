@@ -173,3 +173,68 @@ export async function deleteTrip(req, res, next) {
 }
 
 
+import axios from 'axios';
+
+// Haversine formula to calculate distance
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+export async function estimatePrice(req, res, next) {
+    try {
+        const { departure_city, destination_city } = req.body;
+
+        if (!departure_city || !destination_city) {
+            return res.status(400).json({ error: 'Departure and destination cities are required' });
+        }
+
+        // Geocode departure city
+        const depRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: { q: departure_city, format: 'json', limit: 1 },
+            headers: { 'User-Agent': 'TripShare-App/1.0' }
+        });
+
+        // Geocode destination city
+        const destRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: { q: destination_city, format: 'json', limit: 1 },
+            headers: { 'User-Agent': 'TripShare-App/1.0' }
+        });
+
+        if (depRes.data.length === 0 || destRes.data.length === 0) {
+            return res.status(404).json({ error: 'One or both cities not found' });
+        }
+
+        const depCoords = { lat: parseFloat(depRes.data[0].lat), lon: parseFloat(depRes.data[0].lon) };
+        const destCoords = { lat: parseFloat(destRes.data[0].lat), lon: parseFloat(destRes.data[0].lon) };
+
+        const distanceKm = calculateDistance(depCoords.lat, depCoords.lon, destCoords.lat, destCoords.lon);
+
+        // Pricing logic: Base $2 + $0.06 per km (More reasonable for carpooling)
+        const basePrice = 2;
+        const pricePerKm = 0.06;
+        let estimatedPrice = basePrice + (distanceKm * pricePerKm);
+        estimatedPrice = Math.round(estimatedPrice * 100) / 100; // Round to 2 decimals
+
+        res.json({
+            distance_km: Math.round(distanceKm),
+            estimated_price: estimatedPrice,
+            currency: 'USD'
+        });
+
+    } catch (err) {
+        next(err);
+    }
+}

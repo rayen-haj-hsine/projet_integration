@@ -24,6 +24,29 @@ export default function PublishTrip() {
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [role, setRole] = useState<string | null>(null);
+    const [calculatingPrice, setCalculatingPrice] = useState(false);
+    const [distanceInfo, setDistanceInfo] = useState<string | null>(null);
+
+    const handleCalculatePrice = async () => {
+        if (!form.departure_city || !form.destination_city) {
+            alert('Please enter departure and destination cities first.');
+            return;
+        }
+
+        setCalculatingPrice(true);
+        try {
+            const res = await api.post('/trips/estimate-price', {
+                departure_city: form.departure_city,
+                destination_city: form.destination_city
+            });
+            setForm(prev => ({ ...prev, price: res.data.estimated_price.toString() }));
+            setDistanceInfo(`${res.data.distance_km} km`);
+        } catch (err: any) {
+            alert(err.response?.data?.error || 'Failed to calculate price');
+        } finally {
+            setCalculatingPrice(false);
+        }
+    };
 
     // Ensure only drivers can access this page
     useEffect(() => {
@@ -149,15 +172,37 @@ export default function PublishTrip() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: 6 }}>Price (TND)</label>
-                        <input
-                            type="number"
-                            name="price"
-                            min="0"
-                            step="0.01"
-                            placeholder="e.g., 15"
-                            value={form.price}
-                            onChange={handleChange}
-                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                type="number"
+                                name="price"
+                                min="0"
+                                step="0.01"
+                                placeholder="e.g., 15"
+                                value={form.price}
+                                onChange={handleChange}
+                                style={{ flex: 1 }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleCalculatePrice}
+                                disabled={calculatingPrice}
+                                style={{
+                                    padding: '0 12px',
+                                    fontSize: '0.8rem',
+                                    whiteSpace: 'nowrap',
+                                    backgroundColor: 'var(--secondary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                                title="Calculate based on distance"
+                            >
+                                {calculatingPrice ? '...' : 'Auto Calc'}
+                            </button>
+                        </div>
+                        {distanceInfo && <small style={{ color: 'var(--primary-color)', display: 'block', marginTop: '4px' }}>Distance: {distanceInfo}</small>}
                         {errors.price && <small style={{ color: 'crimson' }}>{errors.price}</small>}
                     </div>
 
