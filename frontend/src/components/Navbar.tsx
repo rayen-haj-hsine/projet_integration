@@ -107,14 +107,14 @@ export default function Navbar() {
                     {token && (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <Link
-                                to="/"
+                                to="/trips"
                                 style={{
                                     padding: '0.5rem 1rem',
                                     borderRadius: '8px',
                                     textDecoration: 'none',
-                                    color: window.location.pathname === '/' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                    backgroundColor: window.location.pathname === '/' ? 'var(--bg-color)' : 'transparent',
-                                    fontWeight: window.location.pathname === '/' ? 600 : 500,
+                                    color: window.location.pathname === '/trips' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                    backgroundColor: window.location.pathname === '/trips' ? 'var(--bg-color)' : 'transparent',
+                                    fontWeight: window.location.pathname === '/trips' ? 600 : 500,
                                     transition: 'all 0.2s ease'
                                 }}
                             >

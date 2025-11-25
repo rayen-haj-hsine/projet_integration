@@ -16,6 +16,7 @@ import PublishTrip from './pages/PublishTrip';
 import './index.css';
 
 import MyTrips from './pages/MyTrips';
+import Home from './pages/Home';
 
 
 
@@ -66,7 +67,8 @@ function App() {
 
         <Navbar />
         <Routes>
-          <Route path="/" element={<Trips />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/trips" element={<Trips />} />
           <Route path="/login" element={token ? <Navigate to="/" /> : <Login />} />
           <Route path="/register" element={token ? <Navigate to="/" /> : <Register />} />
           <Route path="/trips/:id" element={<TripDetails />} />
