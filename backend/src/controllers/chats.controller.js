@@ -88,9 +88,7 @@ export async function listContacts(req, res, next) {
     }
 }
 
-/**
- * Get conversation with another user you are linked to via reservation(s)
- */
+
 export async function getConversation(req, res, next) {
     try {
         const myId = req.user.id;
