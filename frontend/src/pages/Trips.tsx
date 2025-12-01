@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface Trip {
     id: number;
-    driver_id: number;               // ✅ needed to filter out own trips
+    driver_id: number;
     departure_city: string;
     destination_city: string;
     departure_date: string;
@@ -21,7 +21,6 @@ export default function Trips() {
     const [afterDate, setAfterDate] = useState('');
     const navigate = useNavigate();
 
-    // read current user (id + role) from localStorage
     const currentUser = (() => {
         try {
             return JSON.parse(localStorage.getItem('user') || '{}');
@@ -34,14 +33,13 @@ export default function Trips() {
         const params: Record<string, string> = {};
         if (departureCity) params.departure_city = departureCity;
         if (destinationCity) params.destination_city = destinationCity;
-        if (afterDate) params.from_date = afterDate; // HTML <input type="date"> gives YYYY-MM-DD
+        if (afterDate) params.from_date = afterDate;
 
         api
             .get('/trips', { params })
             .then((res) => {
                 let results: Trip[] = res.data?.results ?? [];
 
-                // ✅ Hide trips published by the logged-in driver (client-side safeguard)
                 if (currentUser?.role === 'driver' && typeof currentUser?.id === 'number') {
                     results = results.filter((t) => t.driver_id !== currentUser.id);
                 }
@@ -61,13 +59,11 @@ export default function Trips() {
         fetchTrips();
     };
 
-    // Initial load
     useEffect(() => {
         fetchTrips();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Re-fetch when filters change
     useEffect(() => {
         fetchTrips();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,14 +76,7 @@ export default function Trips() {
             </div>
 
             <div className="card" style={{ marginBottom: '2rem' }}>
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '1rem',
-                        alignItems: 'end',
-                    }}
-                >
+                <div className="grid-auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
                     <div>
                         <label>From</label>
                         <input
@@ -133,12 +122,9 @@ export default function Trips() {
                             onClick={() => navigate(`/trips/${trip.id}`)}
                             style={{ cursor: 'pointer' }}
                         >
-                            <div
-                                className="card-title"
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                            >
+                            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span>{trip.departure_city}</span>
-                                <span style={{ color: 'var(--text-secondary)' }}>→</span>
+                                <span style={{ color: 'var(--text-tertiary)' }}>→</span>
                                 <span>{trip.destination_city}</span>
                             </div>
                             <div className="card-subtitle">
@@ -150,30 +136,18 @@ export default function Trips() {
                                     minute: '2-digit',
                                 })}
                             </div>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginTop: '1rem',
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontSize: '1.25rem',
-                                        fontWeight: 'bold',
-                                        color: 'var(--primary-color)',
-                                    }}
-                                >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
+                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                                     {trip.price} TND
                                 </span>
                                 <span
                                     style={{
                                         fontSize: '0.875rem',
-                                        color:
-                                            trip.available_seats > 0
-                                                ? 'var(--secondary-color)'
-                                                : '#ef4444',
+                                        fontWeight: 500,
+                                        color: trip.available_seats > 0 ? 'var(--success-color)' : 'var(--error-color)',
+                                        backgroundColor: trip.available_seats > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: 'var(--radius-sm)'
                                     }}
                                 >
                                     {trip.available_seats} seats left

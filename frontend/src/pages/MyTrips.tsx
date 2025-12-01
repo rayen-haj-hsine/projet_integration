@@ -86,19 +86,20 @@ export default function MyTrips() {
                                     <div>Seats: {trip.available_seats}</div>
                                     <div>Status: {trip.status}</div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <Link to={`/my-trips/${trip.id}/reservations`}>
+                                        <button className="btn" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>Manage Requests</button>
+                                    </Link>
                                     <Link to={`/trips/${trip.id}`}>
-                                        <button>View</button>
+                                        <button className="btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>View</button>
                                     </Link>
                                     <button
                                         onClick={() => handleDeleteTrip(trip.id)}
+                                        className="btn-danger"
                                         style={{
-                                            backgroundColor: '#dc2626',
-                                            color: 'white',
-                                            border: 'none',
+                                            fontSize: '0.875rem',
                                             padding: '0.5rem 1rem',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer'
+                                            borderRadius: '999px'
                                         }}
                                     >
                                         Delete

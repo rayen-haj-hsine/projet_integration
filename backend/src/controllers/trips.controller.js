@@ -60,6 +60,9 @@ export async function searchTrips(req, res, next) {
             params.push(req.query.to_date);
         }
 
+        // ✅ Default: Only show future trips
+        filters.push('departure_date >= NOW()');
+
         if (req.user && req.user.role === 'driver') {
             filters.push('driver_id != ?');
             params.push(req.user.id);

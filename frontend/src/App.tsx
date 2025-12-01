@@ -9,6 +9,7 @@ import TripDetails from './pages/TripDetail'; // ✅ Corrected
 import Reservations from './pages/Reservation'; // ✅ Corrected
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import ChangePassword from './pages/ChangePassword';
 import ChatList from './pages/ChatList';
 import Chat from './pages/Chat';
@@ -16,6 +17,10 @@ import PublishTrip from './pages/PublishTrip';
 import './index.css';
 
 import MyTrips from './pages/MyTrips';
+import TripReservations from './pages/TripReservations';
+import AdminDashboard from './pages/AdminDashboard';
+import PassengerList from './pages/PassengerList';
+import DriverList from './pages/DriverList';
 import Home from './pages/Home';
 
 
@@ -80,6 +85,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/my-trips/:tripId/reservations"
+            element={
+              <ProtectedRoute>
+                <TripReservations />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/reservations"
@@ -135,6 +148,30 @@ function App() {
               <ProtectedRoute>
                 <PublishTrip />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/passengers"
+            element={
+              <AdminRoute>
+                <PassengerList />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/drivers"
+            element={
+              <AdminRoute>
+                <DriverList />
+              </AdminRoute>
             }
           />
         </Routes>

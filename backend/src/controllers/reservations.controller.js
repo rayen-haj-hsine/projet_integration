@@ -61,6 +61,12 @@ export async function createReservation(req, res, next) {
             [trip_id, passenger_id]
         );
 
+        // Notify driver
+        await pool.query(
+            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "reservation_request", 0)',
+            [trip.driver_id, 'New reservation request for your trip']
+        );
+
         res.status(201).json({ id: resInsert.insertId, status: 'pending' });
     } catch (err) {
         next(err);
@@ -174,6 +180,7 @@ export async function listMyReservations(req, res, next) {
     try {
         const userId = req.user.id;
 
+        // Only return reservations where the user is the PASSENGER
         const [rows] = await pool.query(
             `SELECT r.id, r.trip_id, r.status, r.created_at,
               t.departure_city, t.destination_city, t.departure_date, t.price,
@@ -181,12 +188,42 @@ export async function listMyReservations(req, res, next) {
        FROM reservations r
        JOIN trips t ON t.id = r.trip_id
        JOIN users u ON u.id = r.passenger_id
-       WHERE r.passenger_id = ? OR t.driver_id = ?
+       WHERE r.passenger_id = ?
        ORDER BY r.created_at DESC`,
-            [userId, userId]
+            [userId]
         );
 
         return res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * GET /api/trips/:tripId/reservations
+ * List reservations for a specific trip (Driver only)
+ */
+export async function getTripReservations(req, res, next) {
+    try {
+        const tripId = parseInt(req.params.tripId, 10);
+        const userId = req.user.id;
+
+        // Verify user is the driver of this trip
+        const [trips] = await pool.query('SELECT driver_id FROM trips WHERE id = ?', [tripId]);
+        if (!trips.length) return res.status(404).json({ error: 'Trip not found' });
+        if (trips[0].driver_id !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+        const [rows] = await pool.query(
+            `SELECT r.id, r.trip_id, r.status, r.created_at, r.passenger_id,
+              u.name AS passenger_name, u.email AS passenger_email
+       FROM reservations r
+       JOIN users u ON u.id = r.passenger_id
+       WHERE r.trip_id = ?
+       ORDER BY r.created_at DESC`,
+            [tripId]
+        );
+
+        res.json(rows);
     } catch (err) {
         next(err);
     }

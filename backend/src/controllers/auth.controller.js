@@ -36,6 +36,7 @@ const changePasswordSchema = Joi.object({
  */
 export async function register(req, res, next) {
     try {
+        // Validation (manual check for files if needed, but Joi validates body)
         const { error, value } = registerSchema.validate(req.body, { abortEarly: false });
         if (error) { error.status = 422; throw error; }
 
@@ -44,14 +45,26 @@ export async function register(req, res, next) {
         const [exists] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
         if (exists.length > 0) return res.status(409).json({ error: 'Email already registered' });
 
+        // Handle files
+        let profilePhoto = null;
+        let licenseDocument = null;
+
+        if (req.files) {
+            if (req.files.profile_photo) profilePhoto = req.files.profile_photo[0].path;
+            if (req.files.license_document) licenseDocument = req.files.license_document[0].path;
+        }
+
+        // Drivers must be verified by admin. Passengers are verified by default.
+        const isVerified = role === 'passenger';
+
         const password_hash = await hashPassword(password);
         const [result] = await pool.query(
-            'INSERT INTO users (name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
-            [name, email, password_hash, phone ?? null, role]
+            'INSERT INTO users (name, email, password_hash, phone, role, profile_photo, license_document, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, email, password_hash, phone ?? null, role, profilePhoto, licenseDocument, isVerified]
         );
 
         const token = signToken({ id: result.insertId, role, name });
-        res.status(201).json({ id: result.insertId, name, email, role, token });
+        res.status(201).json({ id: result.insertId, name, email, role, token, is_verified: isVerified });
     } catch (err) {
         next(err);
     }
@@ -69,6 +82,10 @@ export async function login(req, res, next) {
         const user = rows[0];
         const ok = await verifyPassword(password, user.password_hash);
         if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+        if (user.role === 'driver' && !user.is_verified) {
+            return res.status(403).json({ error: 'Your account is pending verification.' });
+        }
 
         const token = signToken({ id: user.id, role: user.role, name: user.name });
         res.json({ id: user.id, name: user.name, email: user.email, role: user.role, token });

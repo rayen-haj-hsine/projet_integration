@@ -1,5 +1,4 @@
-
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../App';
 import api from '../api/axios';
@@ -15,6 +14,20 @@ export default function Navbar() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
+
+    // Close notifications when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+                setNotifDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [notifRef]);
 
     useEffect(() => {
         if (token) {
@@ -106,83 +119,132 @@ export default function Navbar() {
 
                     {token && (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <Link
-                                to="/trips"
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    borderRadius: '8px',
-                                    textDecoration: 'none',
-                                    color: window.location.pathname === '/trips' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                    backgroundColor: window.location.pathname === '/trips' ? 'var(--bg-color)' : 'transparent',
-                                    fontWeight: window.location.pathname === '/trips' ? 600 : 500,
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                🔍 Browse Trips
-                            </Link>
-
-                            {role === 'driver' && (
+                            {role === 'admin' ? (
                                 <>
                                     <Link
-                                        to="/publish-trip"
+                                        to="/admin"
                                         style={{
                                             padding: '0.5rem 1rem',
                                             borderRadius: '8px',
                                             textDecoration: 'none',
-                                            color: window.location.pathname === '/publish-trip' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                            backgroundColor: window.location.pathname === '/publish-trip' ? 'var(--bg-color)' : 'transparent',
-                                            fontWeight: window.location.pathname === '/publish-trip' ? 600 : 500,
+                                            color: window.location.pathname === '/admin' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/admin' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/admin' ? 600 : 500,
                                             transition: 'all 0.2s ease'
                                         }}
                                     >
-                                        ➕ Publish Trip
+                                        🛡️ Driver Requests
                                     </Link>
                                     <Link
-                                        to="/my-trips"
+                                        to="/admin/drivers"
                                         style={{
                                             padding: '0.5rem 1rem',
                                             borderRadius: '8px',
                                             textDecoration: 'none',
-                                            color: window.location.pathname === '/my-trips' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                            backgroundColor: window.location.pathname === '/my-trips' ? 'var(--bg-color)' : 'transparent',
-                                            fontWeight: window.location.pathname === '/my-trips' ? 600 : 500,
+                                            color: window.location.pathname === '/admin/drivers' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/admin/drivers' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/admin/drivers' ? 600 : 500,
                                             transition: 'all 0.2s ease'
                                         }}
                                     >
-                                        🚙 My Trips
+                                        🚙 Drivers
+                                    </Link>
+                                    <Link
+                                        to="/admin/passengers"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/admin/passengers' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/admin/passengers' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/admin/passengers' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        👥 Passengers
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/trips"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/trips' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/trips' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/trips' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        🔍 Browse Trips
+                                    </Link>
+
+                                    {role === 'driver' && (
+                                        <>
+                                            <Link
+                                                to="/publish-trip"
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    textDecoration: 'none',
+                                                    color: window.location.pathname === '/publish-trip' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                    backgroundColor: window.location.pathname === '/publish-trip' ? 'var(--bg-color)' : 'transparent',
+                                                    fontWeight: window.location.pathname === '/publish-trip' ? 600 : 500,
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                            >
+                                                ➕ Publish Trip
+                                            </Link>
+                                            <Link
+                                                to="/my-trips"
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    textDecoration: 'none',
+                                                    color: window.location.pathname === '/my-trips' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                    backgroundColor: window.location.pathname === '/my-trips' ? 'var(--bg-color)' : 'transparent',
+                                                    fontWeight: window.location.pathname === '/my-trips' ? 600 : 500,
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                            >
+                                                🚙 My Trips
+                                            </Link>
+                                        </>
+                                    )}
+
+                                    <Link
+                                        to="/reservations"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/reservations' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/reservations' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/reservations' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        📋 Reservations
+                                    </Link>
+
+                                    <Link
+                                        to="/chats"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/chats' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/chats' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/chats' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        💬 Messages
                                     </Link>
                                 </>
                             )}
-
-                            <Link
-                                to="/reservations"
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    borderRadius: '8px',
-                                    textDecoration: 'none',
-                                    color: window.location.pathname === '/reservations' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                    backgroundColor: window.location.pathname === '/reservations' ? 'var(--bg-color)' : 'transparent',
-                                    fontWeight: window.location.pathname === '/reservations' ? 600 : 500,
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                📋 Reservations
-                            </Link>
-
-                            <Link
-                                to="/chats"
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    borderRadius: '8px',
-                                    textDecoration: 'none',
-                                    color: window.location.pathname === '/chats' ? 'var(--primary-color)' : 'var(--text-primary)',
-                                    backgroundColor: window.location.pathname === '/chats' ? 'var(--bg-color)' : 'transparent',
-                                    fontWeight: window.location.pathname === '/chats' ? 600 : 500,
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                💬 Messages
-                            </Link>
                         </div>
                     )}
                 </div>
@@ -192,7 +254,7 @@ export default function Navbar() {
                     {token ? (
                         <>
                             {/* Notification Bell */}
-                            <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'relative' }} ref={notifRef}>
                                 <button
                                     onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
                                     style={{
@@ -268,12 +330,20 @@ export default function Navbar() {
                                             notifications.map(n => (
                                                 <div
                                                     key={n.id}
-                                                    onClick={() => !n.is_read && markAsRead(n.id)}
+                                                    onClick={() => {
+                                                        if (!n.is_read) markAsRead(n.id);
+                                                        if (n.type === 'reservation_request') {
+                                                            navigate('/my-trips');
+                                                        } else if (['confirmation', 'cancellation'].includes(n.type)) {
+                                                            navigate('/reservations');
+                                                        }
+                                                        setNotifDropdownOpen(false);
+                                                    }}
                                                     style={{
                                                         padding: '1rem',
                                                         borderBottom: '1px solid var(--border-color)',
                                                         backgroundColor: n.is_read ? 'transparent' : 'var(--bg-color)',
-                                                        cursor: n.is_read ? 'default' : 'pointer',
+                                                        cursor: 'pointer',
                                                         opacity: n.is_read ? 0.7 : 1,
                                                         transition: 'all 0.2s ease'
                                                     }}

@@ -9,9 +9,11 @@ import tripsRoutes from './routes/trips.routes.js';
 import reservationsRoutes from './routes/reservations.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import chatsRoutes from './routes/chats.routes.js'; // ✅ Add this import
+import adminRoutes from './routes/admin.routes.js'; // ✅ Add this import
 import ratingsRoutes from './routes/ratings.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './docs/openapi.js';
+import path from 'path';
 
 dotenv.config();
 
@@ -22,6 +24,9 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Serve uploads statically
+app.use('/uploads', express.static('uploads'));
+
 app.get('/', (req, res) => res.send('TripShare API is running 🚀'));
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
@@ -29,6 +34,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { swaggerOptions:
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // ✅ Admin routes
 app.use('/api/trips', tripsRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/notifications', notificationsRoutes);

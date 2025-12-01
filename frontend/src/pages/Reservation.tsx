@@ -64,16 +64,7 @@ export default function Reservations() {
         }
     };
 
-    const handleConfirmReservation = async (reservationId: number) => {
-        try {
-            await api.patch(`/reservations/${reservationId}/confirm`);
-            alert('Reservation confirmed!');
-            window.location.reload(); // Refresh to update reservation list
-        } catch (err: any) {
-            const errorMsg = err.response?.data?.error || 'Failed to confirm reservation';
-            alert(errorMsg);
-        }
-    };
+
 
     return (
         <div className="container">
@@ -87,128 +78,117 @@ export default function Reservations() {
                     <a href="/" className="btn" style={{ marginTop: '1rem' }}>Find a Trip</a>
                 </div>
             ) : (
-                <div className="grid-auto-fit">
-                    {reservations.map((r) => (
-                        <div key={r.id} className="card">
-                            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>{r.departure_city}</span>
-                                <span style={{ color: 'var(--text-secondary)' }}>→</span>
-                                <span>{r.destination_city}</span>
-                            </div>
-                            {r.passenger_name && userRole === 'driver' && (
-                                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                    Passenger: <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{r.passenger_name}</span>
-                                </div>
-                            )}
-                            <div className="card-subtitle">
-                                {new Date(r.departure_date).toLocaleString(undefined, {
-                                    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                })}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                                <span style={{ fontWeight: 600 }}>{r.price} TND</span>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <span style={{
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '999px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        backgroundColor: r.status === 'confirmed' ? '#dcfce7' : r.status === 'cancelled' ? '#fee2e2' : '#fef9c3',
-                                        color: r.status === 'confirmed' ? '#166534' : r.status === 'cancelled' ? '#991b1b' : '#854d0e'
-                                    }}>
-                                        {r.status.toUpperCase()}
-                                    </span>
+                <>
+                    {/* Upcoming Trips Section */}
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Upcoming Trips</h3>
+                    <div className="grid-auto-fit" style={{ marginBottom: '3rem' }}>
+                        {reservations.filter(r => !isTripCompleted(r.departure_date)).length === 0 ? (
+                            <p style={{ gridColumn: '1/-1', color: 'var(--text-secondary)' }}>No upcoming trips.</p>
+                        ) : (
+                            reservations.filter(r => !isTripCompleted(r.departure_date)).map((r) => (
+                                <div key={r.id} className="card">
+                                    <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span>{r.departure_city}</span>
+                                        <span style={{ color: 'var(--text-tertiary)' }}>→</span>
+                                        <span>{r.destination_city}</span>
+                                    </div>
+                                    <div className="card-subtitle">
+                                        {new Date(r.departure_date).toLocaleString(undefined, {
+                                            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                        })}
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                                        <span style={{ fontWeight: 600 }}>{r.price} TND</span>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <span style={{
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '999px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                backgroundColor: r.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : r.status === 'cancelled' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+                                                color: r.status === 'confirmed' ? 'var(--success-color)' : r.status === 'cancelled' ? 'var(--error-color)' : 'var(--warning-color)'
+                                            }}>
+                                                {r.status.toUpperCase()}
+                                            </span>
 
-                                    {/* Driver: Confirm button for pending reservations */}
-                                    {userRole === 'driver' && r.status === 'pending' && (
-                                        <>
+                                            {/* Passenger: Cancel button */}
+                                            {userRole === 'passenger' && r.status !== 'cancelled' && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('Are you sure you want to cancel this reservation?')) {
+                                                            api.patch(`/reservations/${r.id}/cancel`)
+                                                                .then(() => {
+                                                                    alert('Reservation cancelled');
+                                                                    window.location.reload(); // Refresh list
+                                                                })
+                                                                .catch(err => alert(err.response?.data?.error ?? 'Failed to cancel reservation'));
+                                                        }
+                                                    }}
+                                                    className="btn-danger"
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        fontSize: '0.75rem',
+                                                        borderRadius: '999px',
+                                                        cursor: 'pointer',
+                                                        border: 'none',
+                                                        color: 'white'
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Past Trips Section */}
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Past Trips</h3>
+                    <div className="grid-auto-fit">
+                        {reservations.filter(r => isTripCompleted(r.departure_date)).length === 0 ? (
+                            <p style={{ gridColumn: '1/-1', color: 'var(--text-secondary)' }}>No past trips.</p>
+                        ) : (
+                            reservations.filter(r => isTripCompleted(r.departure_date)).map((r) => (
+                                <div key={r.id} className="card" style={{ opacity: 0.8 }}>
+                                    <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span>{r.departure_city}</span>
+                                        <span style={{ color: 'var(--text-tertiary)' }}>→</span>
+                                        <span>{r.destination_city}</span>
+                                    </div>
+                                    <div className="card-subtitle">
+                                        {new Date(r.departure_date).toLocaleString(undefined, {
+                                            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                        })}
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{r.price} TND</span>
+
+                                        {/* Passenger: Rate button */}
+                                        {userRole === 'passenger' && r.status === 'confirmed' && (
                                             <button
-                                                onClick={() => handleConfirmReservation(r.id)}
+                                                onClick={() => handleRateTrip(r.id)}
                                                 className="btn"
                                                 style={{
                                                     padding: '0.25rem 0.75rem',
                                                     fontSize: '0.75rem',
                                                     borderRadius: '999px',
                                                     cursor: 'pointer',
-                                                    backgroundColor: '#10b981',
-                                                    borderColor: '#10b981'
+                                                    backgroundColor: 'var(--warning-color)',
+                                                    color: 'white',
+                                                    border: 'none'
                                                 }}
                                             >
-                                                ✓ Confirm
+                                                ⭐ Rate Trip
                                             </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (window.confirm('Are you sure you want to reject this reservation?')) {
-                                                        api.patch(`/reservations/${r.id}/cancel`)
-                                                            .then(() => {
-                                                                alert('Reservation rejected');
-                                                                window.location.reload();
-                                                            })
-                                                            .catch(err => alert(err.response?.data?.error ?? 'Failed to reject reservation'));
-                                                    }
-                                                }}
-                                                className="btn-danger"
-                                                style={{
-                                                    padding: '0.25rem 0.75rem',
-                                                    fontSize: '0.75rem',
-                                                    borderRadius: '999px',
-                                                    cursor: 'pointer',
-                                                    border: 'none',
-                                                    color: 'white'
-                                                }}
-                                            >
-                                                ✗ Reject
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {/* Passenger: Cancel button */}
-                                    {userRole === 'passenger' && r.status !== 'cancelled' && (
-                                        <button
-                                            onClick={() => {
-                                                if (window.confirm('Are you sure you want to cancel this reservation?')) {
-                                                    api.patch(`/reservations/${r.id}/cancel`)
-                                                        .then(() => {
-                                                            alert('Reservation cancelled');
-                                                            window.location.reload(); // Refresh list
-                                                        })
-                                                        .catch(err => alert(err.response?.data?.error ?? 'Failed to cancel reservation'));
-                                                }
-                                            }}
-                                            className="btn-danger"
-                                            style={{
-                                                padding: '0.25rem 0.75rem',
-                                                fontSize: '0.75rem',
-                                                borderRadius: '999px',
-                                                cursor: 'pointer',
-                                                border: 'none',
-                                                color: 'white'
-                                            }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    )}
-
-                                    {/* Passenger: Rate button */}
-                                    {userRole === 'passenger' && r.status === 'confirmed' && isTripCompleted(r.departure_date) && (
-                                        <button
-                                            onClick={() => handleRateTrip(r.id)}
-                                            className="btn"
-                                            style={{
-                                                padding: '0.25rem 0.75rem',
-                                                fontSize: '0.75rem',
-                                                borderRadius: '999px',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            ⭐ Rate Trip
-                                        </button>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            ))
+                        )}
+                    </div>
+                </>
             )}
 
             {/* Rating Modal */}

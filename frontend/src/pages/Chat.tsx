@@ -56,17 +56,17 @@ export default function Chat() {
         }
     };
 
-    if (loading) return <p>Loading...</p>;
+    if (loading) return <div className="container"><p>Loading...</p></div>;
 
     return (
         <div className="container" style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
             <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
-                <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'var(--surface-color)' }}>
                     <button onClick={() => window.history.back()} className="btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>←</button>
-                    <h3 style={{ margin: 0 }}>Chat</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Chat</h3>
                 </div>
 
-                <div ref={scrollRef} className="chat-messages">
+                <div ref={scrollRef} className="chat-messages" style={{ backgroundColor: 'var(--bg-color)' }}>
                     {messages.length === 0 ? (
                         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>
                             <p>No messages yet. Say hello 👋</p>

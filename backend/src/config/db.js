@@ -11,7 +11,10 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD || '', // empty string if no password
     database: process.env.DB_NAME,
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
+    ssl: process.env.DB_HOST.includes('aivencloud.com') ? {
+        rejectUnauthorized: false // For Aiven cloud database
+    } : false
 });
 
 
