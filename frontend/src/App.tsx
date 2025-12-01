@@ -22,6 +22,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PassengerList from './pages/PassengerList';
 import DriverList from './pages/DriverList';
 import Home from './pages/Home';
+import TripHistory from './pages/TripHistory';
 
 
 
@@ -99,6 +100,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Reservations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <TripHistory />
               </ProtectedRoute>
             }
           />

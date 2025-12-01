@@ -230,6 +230,21 @@ export default function Navbar() {
                                     </Link>
 
                                     <Link
+                                        to="/history"
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '8px',
+                                            textDecoration: 'none',
+                                            color: window.location.pathname === '/history' ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            backgroundColor: window.location.pathname === '/history' ? 'var(--bg-color)' : 'transparent',
+                                            fontWeight: window.location.pathname === '/history' ? 600 : 500,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        📜 History
+                                    </Link>
+
+                                    <Link
                                         to="/chats"
                                         style={{
                                             padding: '0.5rem 1rem',

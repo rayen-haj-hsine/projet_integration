@@ -10,18 +10,36 @@ type User = {
     phone: string | null;
     role: 'driver' | 'passenger';
     created_at?: string;
+    bio?: string;
+    preferences?: {
+        music: boolean;
+        smoking: boolean;
+        pets: boolean;
+    };
+    is_phone_verified?: boolean;
 };
 
 export default function Profile() {
     const [user, setUser] = useState<User | null>(null);
-    const [form, setForm] = useState<{ name: string; email: string; phone: string }>({
+    const [form, setForm] = useState<{
+        name: string;
+        email: string;
+        phone: string;
+        bio: string;
+        preferences: { music: boolean; smoking: boolean; pets: boolean };
+    }>({
         name: '',
         email: '',
-        phone: ''
+        phone: '',
+        bio: '',
+        preferences: { music: false, smoking: false, pets: false }
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [verifying, setVerifying] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,10 +47,23 @@ export default function Profile() {
             try {
                 const res = await api.get('/auth/me');
                 setUser(res.data);
+
+                // Parse preferences if string, or use object
+                let prefs = { music: false, smoking: false, pets: false };
+                if (res.data.preferences) {
+                    try {
+                        prefs = typeof res.data.preferences === 'string'
+                            ? JSON.parse(res.data.preferences)
+                            : res.data.preferences;
+                    } catch (e) { }
+                }
+
                 setForm({
                     name: res.data.name ?? '',
                     email: res.data.email ?? '',
-                    phone: res.data.phone ?? ''
+                    phone: res.data.phone ?? '',
+                    bio: res.data.bio ?? '',
+                    preferences: prefs
                 });
             } catch (err: any) {
                 alert(err.response?.data?.error ?? 'Failed to load profile');
@@ -43,8 +74,15 @@ export default function Profile() {
         load();
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handlePreferenceChange = (key: keyof typeof form.preferences) => {
+        setForm({
+            ...form,
+            preferences: { ...form.preferences, [key]: !form.preferences[key] }
+        });
     };
 
     const handleSave = async () => {
@@ -53,7 +91,9 @@ export default function Profile() {
             const res = await api.put('/auth/me', {
                 name: form.name,
                 email: form.email,
-                phone: form.phone
+                phone: form.phone,
+                bio: form.bio,
+                preferences: form.preferences
             });
 
             setUser({
@@ -61,7 +101,9 @@ export default function Profile() {
                 name: res.data.name,
                 email: res.data.email,
                 phone: res.data.phone,
-                role: res.data.role
+                role: res.data.role,
+                bio: res.data.bio,
+                preferences: res.data.preferences
             });
 
             localStorage.setItem('token', res.data.token);
@@ -71,7 +113,9 @@ export default function Profile() {
                     id: res.data.id,
                     name: res.data.name,
                     email: res.data.email,
-                    role: res.data.role
+                    role: res.data.role,
+                    bio: res.data.bio,
+                    preferences: res.data.preferences
                 })
             );
 
@@ -81,6 +125,31 @@ export default function Profile() {
             alert(err.response?.data?.error ?? 'Update failed');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleVerifyPhone = async () => {
+        if (!verificationCode) {
+            alert('Please enter a verification code');
+            return;
+        }
+
+        setVerifying(true);
+        try {
+            const res = await api.post('/auth/me/verify-phone', { code: verificationCode });
+            alert(res.data.message);
+
+            // Update user state
+            if (user) {
+                setUser({ ...user, is_phone_verified: true });
+            }
+
+            setShowVerifyModal(false);
+            setVerificationCode('');
+        } catch (err: any) {
+            alert(err.response?.data?.error ?? 'Verification failed');
+        } finally {
+            setVerifying(false);
         }
     };
 
@@ -106,7 +175,39 @@ export default function Profile() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Phone:</span>
-                            <span>{user.phone ?? '-'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>{user.phone ?? '-'}</span>
+                                {user.phone && (
+                                    user.is_phone_verified ? (
+                                        <span style={{
+                                            backgroundColor: '#dcfce7',
+                                            color: '#166534',
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '12px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600
+                                        }}>
+                                            ✓ Verified
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowVerifyModal(true)}
+                                            style={{
+                                                backgroundColor: '#fef3c7',
+                                                color: '#92400e',
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '12px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                border: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Verify Phone
+                                        </button>
+                                    )
+                                )}
+                            </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Role:</span>
@@ -116,6 +217,30 @@ export default function Profile() {
                             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
                                 <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Joined:</span>
                                 <span>{new Date(user.created_at).toLocaleDateString()}</span>
+                            </div>
+                        )}
+                        {user.bio && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'start' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Bio:</span>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{user.bio}</span>
+                            </div>
+                        )}
+                        {user.preferences && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Preferences:</span>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {(() => {
+                                        const prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences) : user.preferences;
+                                        return (
+                                            <>
+                                                {prefs.music && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🎵 Music</span>}
+                                                {prefs.smoking && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🚬 Smoking</span>}
+                                                {prefs.pets && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🐾 Pets</span>}
+                                                {!prefs.music && !prefs.smoking && !prefs.pets && <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>None selected</span>}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         )}
 
@@ -157,6 +282,77 @@ export default function Profile() {
                             />
                         </div>
                         <div>
+                            <label>Bio</label>
+                            <textarea
+                                name="bio"
+                                value={form.bio}
+                                onChange={handleChange}
+                                placeholder="Tell us about yourself..."
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    minHeight: '100px',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <label>Preferences</label>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePreferenceChange('music')}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '20px',
+                                        border: `1px solid ${form.preferences.music ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                                        backgroundColor: form.preferences.music ? 'var(--primary-color)' : 'transparent',
+                                        color: form.preferences.music ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🎵 Music
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePreferenceChange('smoking')}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '20px',
+                                        border: `1px solid ${form.preferences.smoking ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                                        backgroundColor: form.preferences.smoking ? 'var(--primary-color)' : 'transparent',
+                                        color: form.preferences.smoking ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🚬 Smoking
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePreferenceChange('pets')}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '20px',
+                                        border: `1px solid ${form.preferences.pets ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                                        backgroundColor: form.preferences.pets ? 'var(--primary-color)' : 'transparent',
+                                        color: form.preferences.pets ? 'white' : 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🐾 Pets
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
                             <label>Role</label>
                             <input type="text" value={user.role} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
                         </div>
@@ -167,10 +363,20 @@ export default function Profile() {
                             </button>
                             <button
                                 onClick={() => {
+                                    let prefs = { music: false, smoking: false, pets: false };
+                                    if (user.preferences) {
+                                        try {
+                                            prefs = typeof user.preferences === 'string'
+                                                ? JSON.parse(user.preferences)
+                                                : user.preferences;
+                                        } catch (e) { }
+                                    }
                                     setForm({
                                         name: user.name ?? '',
                                         email: user.email ?? '',
-                                        phone: user.phone ?? ''
+                                        phone: user.phone ?? '',
+                                        bio: user.bio ?? '',
+                                        preferences: prefs
                                     });
                                     setIsEditing(false);
                                 }}
@@ -182,6 +388,65 @@ export default function Profile() {
                     </div>
                 )}
             </div>
+
+            {/* Phone Verification Modal */}
+            {showVerifyModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}
+                    onClick={() => setShowVerifyModal(false)}
+                >
+                    <div
+                        className="card"
+                        style={{ maxWidth: '400px', margin: '1rem' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="page-header">
+                            <h3>Verify Phone Number</h3>
+                        </div>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                            Enter the 6-digit verification code sent to your phone.
+                            <br /><span style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>(For demo: enter any 6-digit code)</span>
+                        </p>
+                        <div className="auth-form">
+                            <div>
+                                <label>Verification Code</label>
+                                <input
+                                    type="text"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value)}
+                                    placeholder="123456"
+                                    maxLength={6}
+                                    style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.25rem' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button onClick={handleVerifyPhone} disabled={verifying} className="btn">
+                                    {verifying ? 'Verifying...' : 'Verify'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowVerifyModal(false);
+                                        setVerificationCode('');
+                                    }}
+                                    className="btn btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

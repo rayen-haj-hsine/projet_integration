@@ -13,12 +13,15 @@ type FormState = {
 
 export default function PublishTrip() {
     const navigate = useNavigate();
-    const [form, setForm] = useState<FormState>({
+    const [form, setForm] = useState<FormState & { is_recurring: boolean; recurrence_pattern: string; recurrence_end_date: string }>({
         departure_city: '',
         destination_city: '',
         departure_date: '',
         price: '',
-        available_seats: ''
+        available_seats: '',
+        is_recurring: false,
+        recurrence_pattern: 'daily',
+        recurrence_end_date: ''
     });
 
     const [submitting, setSubmitting] = useState(false);
@@ -26,6 +29,8 @@ export default function PublishTrip() {
     const [role, setRole] = useState<string | null>(null);
     const [calculatingPrice, setCalculatingPrice] = useState(false);
     const [distanceInfo, setDistanceInfo] = useState<string | null>(null);
+
+    // ... (keep handleCalculatePrice and useEffects same)
 
     const handleCalculatePrice = async () => {
         if (!form.departure_city || !form.destination_city) {
@@ -48,7 +53,6 @@ export default function PublishTrip() {
         }
     };
 
-    // Ensure only drivers can access this page
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
@@ -71,8 +75,9 @@ export default function PublishTrip() {
         }
     }, [role, navigate]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+        setForm(prev => ({ ...prev, [e.target.name]: value }));
         setErrors(prev => ({ ...prev, [e.target.name]: '' }));
     };
 
@@ -96,6 +101,15 @@ export default function PublishTrip() {
         if (!form.available_seats.trim()) newErrors.available_seats = 'Available seats is required';
         else if (!Number.isInteger(seatsNum) || seatsNum < 1) newErrors.available_seats = 'Seats must be an integer ≥ 1';
 
+        if (form.is_recurring) {
+            if (!form.recurrence_end_date) newErrors.recurrence_end_date = 'End date is required for recurring trips';
+            else {
+                const endDt = new Date(form.recurrence_end_date);
+                const startDt = new Date(form.departure_date);
+                if (endDt <= startDt) newErrors.recurrence_end_date = 'End date must be after start date';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -106,15 +120,27 @@ export default function PublishTrip() {
 
         setSubmitting(true);
         try {
-            await api.post('/trips', {
+            const payload: any = {
                 departure_city: form.departure_city.trim(),
                 destination_city: form.destination_city.trim(),
-                departure_date: form.departure_date, // HTML datetime-local format works for MySQL DATETIME
+                departure_date: form.departure_date,
                 price: Number(form.price),
-                available_seats: Number(form.available_seats)
-            });
+                available_seats: Number(form.available_seats),
+                is_recurring: form.is_recurring
+            };
 
-            alert('Trip published successfully ✅');
+            if (form.is_recurring) {
+                payload.recurrence_pattern = form.recurrence_pattern;
+                payload.recurrence_end_date = form.recurrence_end_date;
+            }
+
+            const res = await api.post('/trips', payload);
+
+            let msg = 'Trip published successfully ✅';
+            if (res.data.generated_trips > 0) {
+                msg += `\nCreated ${res.data.generated_trips + 1} recurring trips!`;
+            }
+            alert(msg);
             navigate('/my-trips');
         } catch (err: any) {
             alert(err?.response?.data?.error ?? 'Failed to publish trip');
@@ -221,6 +247,49 @@ export default function PublishTrip() {
                     </div>
                 </div>
 
+                {/* Recurrence Section */}
+                <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="is_recurring"
+                            name="is_recurring"
+                            checked={form.is_recurring}
+                            onChange={handleChange}
+                            style={{ width: 'auto', margin: 0 }}
+                        />
+                        <label htmlFor="is_recurring" style={{ margin: 0, fontWeight: 600 }}>Repeat this trip</label>
+                    </div>
+
+                    {form.is_recurring && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 6 }}>Frequency</label>
+                                <select
+                                    name="recurrence_pattern"
+                                    value={form.recurrence_pattern}
+                                    onChange={handleChange}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                >
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="weekdays">Weekdays (Mon-Fri)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 6 }}>End Date</label>
+                                <input
+                                    type="date"
+                                    name="recurrence_end_date"
+                                    value={form.recurrence_end_date}
+                                    onChange={handleChange}
+                                />
+                                {errors.recurrence_end_date && <small style={{ color: 'crimson' }}>{errors.recurrence_end_date}</small>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div style={{ display: 'flex', gap: '8px', marginTop: 8 }}>
                     <button type="submit" disabled={submitting}>
                         {submitting ? 'Publishing…' : 'Publish Trip'}
@@ -233,7 +302,10 @@ export default function PublishTrip() {
                                 destination_city: '',
                                 departure_date: '',
                                 price: '',
-                                available_seats: ''
+                                available_seats: '',
+                                is_recurring: false,
+                                recurrence_pattern: 'daily',
+                                recurrence_end_date: ''
                             });
                             setErrors({});
                         }}

@@ -8,7 +8,10 @@ const createTripSchema = Joi.object({
     destination_city: Joi.string().min(2).max(100).required(),
     departure_date: Joi.date().iso().required(),
     price: Joi.number().precision(2).min(0).required(),
-    available_seats: Joi.number().integer().min(1).required()
+    available_seats: Joi.number().integer().min(1).required(),
+    is_recurring: Joi.boolean().default(false),
+    recurrence_pattern: Joi.string().valid('none', 'daily', 'weekly', 'weekdays').default('none'),
+    recurrence_end_date: Joi.date().iso().allow(null).default(null)
 });
 
 export async function createTrip(req, res, next) {
@@ -17,20 +20,80 @@ export async function createTrip(req, res, next) {
         if (error) { error.status = 422; throw error; }
 
         const driver_id = req.user.id;
-        const { departure_city, destination_city, departure_date, price, available_seats } = value;
+        const {
+            departure_city, destination_city, departure_date, price, available_seats,
+            is_recurring, recurrence_pattern, recurrence_end_date
+        } = value;
 
         const [users] = await pool.query('SELECT role FROM users WHERE id = ?', [driver_id]);
         if (users.length === 0 || users[0].role !== 'driver') {
             return res.status(403).json({ error: 'Only drivers can create trips' });
         }
 
+        // 1. Create the initial (parent) trip
         const [result] = await pool.query(
-            `INSERT INTO trips (driver_id, departure_city, destination_city, departure_date, price, available_seats, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'open')`,
-            [driver_id, departure_city, destination_city, departure_date, price, available_seats]
+            `INSERT INTO trips (driver_id, departure_city, destination_city, departure_date, price, available_seats, status, is_recurring, recurrence_pattern, recurrence_end_date)
+       VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`,
+            [driver_id, departure_city, destination_city, departure_date, price, available_seats, is_recurring, recurrence_pattern, recurrence_end_date]
         );
 
-        res.status(201).json({ id: result.insertId });
+        const parentTripId = result.insertId;
+        let generatedCount = 0;
+
+        // 2. If recurring, generate future trips
+        if (is_recurring && recurrence_pattern !== 'none' && recurrence_end_date) {
+            const startDate = new Date(departure_date);
+            const endDate = new Date(recurrence_end_date);
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 60); // Hard limit: 60 days into future
+
+            const effectiveEndDate = endDate < maxDate ? endDate : maxDate;
+            let currentDate = new Date(startDate);
+
+            // Move to next occurrence immediately
+            currentDate.setDate(currentDate.getDate() + 1);
+
+            while (currentDate <= effectiveEndDate) {
+                let shouldCreate = false;
+
+                if (recurrence_pattern === 'daily') {
+                    shouldCreate = true;
+                } else if (recurrence_pattern === 'weekly') {
+                    // Check if same day of week
+                    if (currentDate.getDay() === startDate.getDay()) {
+                        shouldCreate = true;
+                    }
+                } else if (recurrence_pattern === 'weekdays') {
+                    // Mon(1) to Fri(5)
+                    const day = currentDate.getDay();
+                    if (day >= 1 && day <= 5) {
+                        shouldCreate = true;
+                    }
+                }
+
+                if (shouldCreate) {
+                    // Format date for MySQL
+                    const nextDate = new Date(currentDate);
+                    // Preserve time from original departure
+                    nextDate.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
+
+                    await pool.query(
+                        `INSERT INTO trips (driver_id, departure_city, destination_city, departure_date, price, available_seats, status, is_recurring, recurrence_pattern, recurrence_end_date, parent_trip_id)
+                         VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`,
+                        [driver_id, departure_city, destination_city, nextDate, price, available_seats, true, recurrence_pattern, recurrence_end_date, parentTripId]
+                    );
+                    generatedCount++;
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        res.status(201).json({
+            id: parentTripId,
+            message: 'Trip created successfully',
+            generated_trips: generatedCount
+        });
     } catch (err) {
         next(err);
     }
@@ -58,6 +121,22 @@ export async function searchTrips(req, res, next) {
         if (req.query.to_date) {
             filters.push('departure_date <= ?');
             params.push(req.query.to_date);
+        }
+
+        // Price range filters
+        if (req.query.minPrice) {
+            filters.push('price >= ?');
+            params.push(parseFloat(req.query.minPrice));
+        }
+        if (req.query.maxPrice) {
+            filters.push('price <= ?');
+            params.push(parseFloat(req.query.maxPrice));
+        }
+
+        // Minimum available seats filter
+        if (req.query.minSeats) {
+            filters.push('available_seats >= ?');
+            params.push(parseInt(req.query.minSeats, 10));
         }
 
         // ✅ Default: Only show future trips
@@ -175,6 +254,90 @@ export async function deleteTrip(req, res, next) {
     }
 }
 
+const updateTripSchema = Joi.object({
+    departure_date: Joi.date().iso(),
+    price: Joi.number().precision(2).min(0),
+    available_seats: Joi.number().integer().min(1)
+});
+
+export async function updateTrip(req, res, next) {
+    try {
+        const tripId = parseInt(req.params.id, 10);
+        const driverId = req.user.id;
+        const { error, value } = updateTripSchema.validate(req.body);
+        if (error) { error.status = 422; throw error; }
+
+        const { departure_date, price, available_seats } = value;
+
+        // Verify trip exists and belongs to driver
+        const [trips] = await pool.query(
+            'SELECT id, driver_id, departure_city, destination_city, departure_date FROM trips WHERE id = ?',
+            [tripId]
+        );
+
+        if (!trips.length) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        if (trips[0].driver_id !== driverId) {
+            return res.status(403).json({ error: 'You can only update your own trips' });
+        }
+
+        const trip = trips[0];
+
+        // Prepare update query
+        const updates = [];
+        const params = [];
+
+        if (departure_date) {
+            updates.push('departure_date = ?');
+            params.push(departure_date);
+        }
+        if (price !== undefined) {
+            updates.push('price = ?');
+            params.push(price);
+        }
+        if (available_seats !== undefined) {
+            updates.push('available_seats = ?');
+            params.push(available_seats);
+        }
+
+        if (updates.length === 0) {
+            return res.json({ message: 'No changes provided' });
+        }
+
+        params.push(tripId);
+        await pool.query(`UPDATE trips SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        // Notify passengers if critical details changed
+        const [reservations] = await pool.query(
+            'SELECT passenger_id FROM reservations WHERE trip_id = ?',
+            [tripId]
+        );
+
+        if (reservations.length > 0) {
+            let changes = [];
+            if (departure_date) changes.push(`Date changed to ${new Date(departure_date).toLocaleString()}`);
+            if (price) changes.push(`Price changed to ${price} DT`);
+
+            if (changes.length > 0) {
+                const message = `Trip update: ${trip.departure_city} to ${trip.destination_city}. ${changes.join(', ')}`;
+                for (const r of reservations) {
+                    await pool.query(
+                        'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "trip_update", 0)',
+                        [r.passenger_id, message]
+                    );
+                }
+            }
+        }
+
+        res.json({ success: true, message: 'Trip updated successfully' });
+
+    } catch (err) {
+        next(err);
+    }
+}
+
 
 import axios from 'axios';
 
@@ -237,6 +400,40 @@ export async function estimatePrice(req, res, next) {
             currency: 'USD'
         });
 
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function getTripHistory(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const role = req.user.role;
+        let rows = [];
+
+        if (role === 'driver') {
+            // Drivers: trips they published in the past
+            [rows] = await pool.query(
+                `SELECT id, departure_city, destination_city, departure_date, price, available_seats, status
+                 FROM trips
+                 WHERE driver_id = ? AND departure_date < NOW()
+                 ORDER BY departure_date DESC`,
+                [userId]
+            );
+        } else {
+            // Passengers: trips they reserved in the past
+            [rows] = await pool.query(
+                `SELECT t.id, t.departure_city, t.destination_city, t.departure_date, t.price, t.status as trip_status,
+                        r.status as reservation_status, r.created_at as reservation_date
+                 FROM reservations r
+                 JOIN trips t ON t.id = r.trip_id
+                 WHERE r.passenger_id = ? AND t.departure_date < NOW()
+                 ORDER BY t.departure_date DESC`,
+                [userId]
+            );
+        }
+
+        res.json(rows);
     } catch (err) {
         next(err);
     }

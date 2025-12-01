@@ -19,6 +19,9 @@ export default function Trips() {
     const [departureCity, setDepartureCity] = useState('');
     const [destinationCity, setDestinationCity] = useState('');
     const [afterDate, setAfterDate] = useState('');
+    const [minPrice, setMinPrice] = useState('');
+    const [maxPrice, setMaxPrice] = useState('');
+    const [minSeats, setMinSeats] = useState('');
     const navigate = useNavigate();
 
     const currentUser = (() => {
@@ -34,6 +37,9 @@ export default function Trips() {
         if (departureCity) params.departure_city = departureCity;
         if (destinationCity) params.destination_city = destinationCity;
         if (afterDate) params.from_date = afterDate;
+        if (minPrice) params.minPrice = minPrice;
+        if (maxPrice) params.maxPrice = maxPrice;
+        if (minSeats) params.minSeats = minSeats;
 
         api
             .get('/trips', { params })
@@ -56,6 +62,9 @@ export default function Trips() {
         setDepartureCity('');
         setDestinationCity('');
         setAfterDate('');
+        setMinPrice('');
+        setMaxPrice('');
+        setMinSeats('');
         fetchTrips();
     };
 
@@ -67,7 +76,7 @@ export default function Trips() {
     useEffect(() => {
         fetchTrips();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [departureCity, destinationCity, afterDate]);
+    }, [departureCity, destinationCity, afterDate, minPrice, maxPrice, minSeats]);
 
     return (
         <div className="container">
@@ -76,7 +85,8 @@ export default function Trips() {
             </div>
 
             <div className="card" style={{ marginBottom: '2rem' }}>
-                <div className="grid-auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>🔍 Search Filters</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', alignItems: 'end' }}>
                     <div>
                         <label>From</label>
                         <input
@@ -101,6 +111,39 @@ export default function Trips() {
                             type="date"
                             value={afterDate}
                             onChange={(e) => setAfterDate(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label>Min Price (DT)</label>
+                        <input
+                            type="number"
+                            placeholder="0"
+                            value={minPrice}
+                            onChange={(e) => setMinPrice(e.target.value)}
+                            min="0"
+                            step="0.5"
+                        />
+                    </div>
+                    <div>
+                        <label>Max Price (DT)</label>
+                        <input
+                            type="number"
+                            placeholder="Any"
+                            value={maxPrice}
+                            onChange={(e) => setMaxPrice(e.target.value)}
+                            min="0"
+                            step="0.5"
+                        />
+                    </div>
+                    <div>
+                        <label>Min Seats</label>
+                        <input
+                            type="number"
+                            placeholder="1"
+                            value={minSeats}
+                            onChange={(e) => setMinSeats(e.target.value)}
+                            min="1"
+                            step="1"
                         />
                     </div>
                     <button type="button" onClick={resetFilters} className="btn-secondary">

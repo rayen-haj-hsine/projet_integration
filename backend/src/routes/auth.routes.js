@@ -1,6 +1,6 @@
 
 import { Router } from 'express';
-import { register, login, getMe, updateMe, changePassword } from '../controllers/auth.controller.js';
+import { register, login, getMe, updateMe, changePassword, verifyPhone } from '../controllers/auth.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 
 import { upload } from '../config/multer.js';
@@ -16,6 +16,7 @@ router.post('/login', login);
 // Profile
 router.get('/me', requireAuth, getMe);
 router.put('/me', requireAuth, updateMe);
-router.put('/me/password', requireAuth, changePassword); // NEW
+router.put('/me/password', requireAuth, changePassword);
+router.post('/me/verify-phone', requireAuth, verifyPhone);
 
 export default router;

@@ -23,7 +23,9 @@ const loginSchema = Joi.object({
 const updateMeSchema = Joi.object({
     name: Joi.string().min(2).max(100).optional(),
     email: Joi.string().email().max(150).optional(),
-    phone: Joi.string().max(20).allow(null, '').optional()
+    phone: Joi.string().max(20).allow(null, '').optional(),
+    bio: Joi.string().max(500).allow(null, '').optional(),
+    preferences: Joi.object().optional()
 }).min(1);
 
 const changePasswordSchema = Joi.object({
@@ -101,7 +103,7 @@ export async function getMe(req, res, next) {
     try {
         const userId = req.user.id;
         const [rows] = await pool.query(
-            'SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?',
+            'SELECT id, name, email, phone, role, created_at, bio, preferences, is_phone_verified FROM users WHERE id = ?',
             [userId]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
@@ -118,13 +120,19 @@ export async function updateMe(req, res, next) {
 
         const userId = req.user.id;
 
-        const [rows] = await pool.query('SELECT id, name, email, phone, role FROM users WHERE id = ?', [userId]);
+        const [rows] = await pool.query('SELECT id, name, email, phone, role, bio, preferences FROM users WHERE id = ?', [userId]);
         if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const current = rows[0];
 
         const nextName = value.name ?? current.name;
         const nextEmail = value.email ?? current.email;
         const nextPhone = value.phone ?? current.phone;
+        const nextBio = value.bio ?? current.bio;
+        // Merge preferences if they exist, or replace? Let's replace for simplicity or merge if partial.
+        // Assuming value.preferences is the new state or partial update.
+        // If it's a partial update, we'd need to merge. Let's assume full replacement for the preferences object for now, or merge if we want to be fancy.
+        // Let's do a simple replace if provided, or keep current.
+        const nextPreferences = value.preferences ? JSON.stringify(value.preferences) : (typeof current.preferences === 'string' ? current.preferences : JSON.stringify(current.preferences));
 
         if (value.email && value.email !== current.email) {
             const [exists] = await pool.query('SELECT id FROM users WHERE email = ? AND id <> ?', [value.email, userId]);
@@ -132,8 +140,8 @@ export async function updateMe(req, res, next) {
         }
 
         await pool.query(
-            'UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?',
-            [nextName, nextEmail, nextPhone, userId]
+            'UPDATE users SET name = ?, email = ?, phone = ?, bio = ?, preferences = ? WHERE id = ?',
+            [nextName, nextEmail, nextPhone, nextBio, nextPreferences, userId]
         );
 
         const token = signToken({ id: userId, role: current.role, name: nextName });
@@ -144,6 +152,8 @@ export async function updateMe(req, res, next) {
             email: nextEmail,
             phone: nextPhone,
             role: current.role,
+            bio: nextBio,
+            preferences: value.preferences || current.preferences,
             token
         });
     } catch (err) {
@@ -178,6 +188,28 @@ export async function changePassword(req, res, next) {
 
         // No need to reissue token on password change; keep current session
         res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Phone Verification (Mock Implementation)
+ */
+export async function verifyPhone(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const { code } = req.body;
+
+        // Mock verification: accept any 6-digit code
+        if (!code || !/^\d{6}$/.test(code)) {
+            return res.status(400).json({ error: 'Invalid verification code. Please enter a 6-digit code.' });
+        }
+
+        // Update user's phone verification status
+        await pool.query('UPDATE users SET is_phone_verified = TRUE WHERE id = ?', [userId]);
+
+        res.json({ message: 'Phone verified successfully!', is_phone_verified: true });
     } catch (err) {
         next(err);
     }

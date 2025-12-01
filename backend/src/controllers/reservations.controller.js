@@ -41,14 +41,14 @@ export async function createReservation(req, res, next) {
 
         // Prevent duplicate active reservation
         const [existing] = await pool.query(
-            'SELECT id FROM reservations WHERE trip_id = ? AND passenger_id = ? AND status IN ("pending","confirmed")',
+            'SELECT id FROM reservations WHERE trip_id = ? AND passenger_id = ? AND status IN (\'pending\',\'confirmed\')',
             [trip_id, passenger_id]
         );
         if (existing.length) return res.status(409).json({ error: 'Already reserved this trip' });
 
         // Atomic seat decrement (works without transactions)
         const [updateRes] = await pool.query(
-            'UPDATE trips SET available_seats = available_seats - 1 WHERE id = ? AND status = "open" AND available_seats > 0',
+            'UPDATE trips SET available_seats = available_seats - 1 WHERE id = ? AND status = \'open\' AND available_seats > 0',
             [trip_id]
         );
         if (updateRes.affectedRows === 0) {
@@ -57,13 +57,13 @@ export async function createReservation(req, res, next) {
 
         // Insert reservation as pending
         const [resInsert] = await pool.query(
-            'INSERT INTO reservations (trip_id, passenger_id, status) VALUES (?, ?, "pending")',
+            'INSERT INTO reservations (trip_id, passenger_id, status) VALUES (?, ?, \'pending\')',
             [trip_id, passenger_id]
         );
 
         // Notify driver
         await pool.query(
-            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "reservation_request", 0)',
+            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, \'reservation_request\', 0)',
             [trip.driver_id, 'New reservation request for your trip']
         );
 
@@ -103,10 +103,10 @@ export async function confirmReservation(req, res, next) {
             return res.status(403).json({ error: 'Forbidden: not trip driver' });
         }
 
-        await pool.query('UPDATE reservations SET status = "confirmed" WHERE id = ?', [reservationId]);
+        await pool.query('UPDATE reservations SET status = \'confirmed\' WHERE id = ?', [reservationId]);
 
         await pool.query(
-            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "confirmation", 0)',
+            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, \'confirmation\', 0)',
             [reservation.passenger_id, 'Your reservation has been confirmed']
         );
 
@@ -159,7 +159,7 @@ export async function cancelReservation(req, res, next) {
         // Notify the other party
         const notifyUserId = isPassenger ? reservation.driver_id : reservation.passenger_id;
         await pool.query(
-            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "cancellation", 0)',
+            'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, \'cancellation\', 0)',
             [notifyUserId, 'A reservation has been cancelled and removed']
         );
 
