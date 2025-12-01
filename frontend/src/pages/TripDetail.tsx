@@ -29,14 +29,32 @@ interface RatingsResponse {
     ratings: RatingData[];
 }
 
+interface TripTimeEstimate {
+    distance_km: number;
+    formatted_duration: string;
+    estimated_duration: {
+        hours: number;
+        minutes: number;
+    };
+}
+
 export default function TripDetails() {
     const { id } = useParams();
     const [trip, setTrip] = useState<TripDetail | null>(null);
     const [ratingsData, setRatingsData] = useState<RatingsResponse | null>(null);
+    const [tripTime, setTripTime] = useState<TripTimeEstimate | null>(null);
 
     useEffect(() => {
         api.get(`/trips/${id}`)
-            .then((res) => setTrip(res.data))
+            .then((res) => {
+                setTrip(res.data);
+                // Fetch trip time estimation
+                return api.post('/trips/estimate-time', {
+                    departure_city: res.data.departure_city,
+                    destination_city: res.data.destination_city
+                });
+            })
+            .then((res) => setTripTime(res.data))
             .catch(console.error);
 
         // Fetch ratings for this trip
@@ -85,7 +103,7 @@ export default function TripDetails() {
                     </p>
                 </div>
 
-                <div className="grid-auto-fit" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                <div className="grid-auto-fit" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2.5rem' }}>
                     <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                         <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Price per seat</p>
                         <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1 }}>{trip.price} TND</p>
@@ -96,6 +114,19 @@ export default function TripDetails() {
                             {trip.available_seats}
                         </p>
                     </div>
+                    {tripTime && (
+                        <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                            <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                                ⏱️ Estimated Duration
+                            </p>
+                            <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', lineHeight: 1 }}>
+                                {tripTime.formatted_duration}
+                            </p>
+                            <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-tertiary)' }}>
+                                ~{tripTime.distance_km} km
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ marginBottom: '2.5rem', padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>

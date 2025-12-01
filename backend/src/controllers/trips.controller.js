@@ -438,3 +438,61 @@ export async function getTripHistory(req, res, next) {
         next(err);
     }
 }
+
+// AI-powered trip time estimation
+export async function estimateTripTime(req, res, next) {
+    try {
+        const { departure_city, destination_city } = req.body;
+
+        if (!departure_city || !destination_city) {
+            return res.status(400).json({ error: 'Departure and destination cities are required' });
+        }
+
+        // Geocode cities to get coordinates
+        const depRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: { q: departure_city, format: 'json', limit: 1 },
+            headers: { 'User-Agent': 'TripShare-App/1.0' }
+        });
+
+        const destRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: { q: destination_city, format: 'json', limit: 1 },
+            headers: { 'User-Agent': 'TripShare-App/1.0' }
+        });
+
+        if (depRes.data.length === 0 || destRes.data.length === 0) {
+            return res.status(404).json({ error: 'One or both cities not found' });
+        }
+
+        const depCoords = { lat: parseFloat(depRes.data[0].lat), lon: parseFloat(depRes.data[0].lon) };
+        const destCoords = { lat: parseFloat(destRes.data[0].lat), lon: parseFloat(destRes.data[0].lon) };
+
+        // Calculate distance
+        const distanceKm = calculateDistance(depCoords.lat, depCoords.lon, destCoords.lat, destCoords.lon);
+
+        // AI-based time estimation
+        // Factors: distance, average speed (highway: 90 km/h, city: 50 km/h), rest stops
+        let averageSpeed = 70; // km/h (mixed highway and city)
+        let baseTimeHours = distanceKm / averageSpeed;
+
+        // Add buffer for traffic, rest stops (10% for short trips, 15% for long trips)
+        const bufferPercent = distanceKm > 200 ? 0.15 : 0.10;
+        const totalTimeHours = baseTimeHours * (1 + bufferPercent);
+
+        // Convert to hours and minutes
+        const hours = Math.floor(totalTimeHours);
+        const minutes = Math.round((totalTimeHours - hours) * 60);
+
+        res.json({
+            distance_km: Math.round(distanceKm),
+            estimated_duration: {
+                hours: hours,
+                minutes: minutes,
+                total_minutes: Math.round(totalTimeHours * 60)
+            },
+            formatted_duration: `${hours}h ${minutes}m`
+        });
+
+    } catch (err) {
+        next(err);
+    }
+}
