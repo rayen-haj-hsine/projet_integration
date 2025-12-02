@@ -229,3 +229,39 @@ export async function getTripReservations(req, res, next) {
     }
 }
 
+/**
+ * POST /api/reservations/:id/rate
+ * Rate a completed trip
+ */
+export async function rateReservation(req, res, next) {
+    try {
+        const reservationId = parseInt(req.params.id, 10);
+        const passengerId = req.user.id;
+        const { rating, comment } = req.body;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+        }
+
+        // Verify reservation exists and belongs to user
+        const [reservations] = await pool.query(
+            'SELECT * FROM reservations WHERE id = ? AND passenger_id = ?',
+            [reservationId, passengerId]
+        );
+
+        if (reservations.length === 0) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        // Update rating
+        await pool.query(
+            'UPDATE reservations SET rating = ?, rating_comment = ? WHERE id = ?',
+            [rating, comment, reservationId]
+        );
+
+        res.json({ message: 'Rating submitted successfully' });
+    } catch (err) {
+        next(err);
+    }
+}
+

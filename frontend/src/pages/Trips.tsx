@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { Search, ArrowRight, Calendar, Users } from 'lucide-react';
 
 interface Trip {
     id: number;
@@ -85,7 +86,9 @@ export default function Trips() {
             </div>
 
             <div className="card" style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>🔍 Search Filters</h3>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Search size={20} /> Search Filters
+                </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', alignItems: 'end' }}>
                     <div>
                         <label>From</label>
@@ -167,10 +170,11 @@ export default function Trips() {
                         >
                             <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span>{trip.departure_city}</span>
-                                <span style={{ color: 'var(--text-tertiary)' }}>→</span>
+                                <ArrowRight size={16} className="text-secondary" />
                                 <span>{trip.destination_city}</span>
                             </div>
-                            <div className="card-subtitle">
+                            <div className="card-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Calendar size={14} />
                                 {new Date(trip.departure_date).toLocaleDateString(undefined, {
                                     weekday: 'short',
                                     month: 'short',
@@ -180,7 +184,7 @@ export default function Trips() {
                                 })}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                     {trip.price} TND
                                 </span>
                                 <span
@@ -190,9 +194,13 @@ export default function Trips() {
                                         color: trip.available_seats > 0 ? 'var(--success-color)' : 'var(--error-color)',
                                         backgroundColor: trip.available_seats > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                                         padding: '0.25rem 0.75rem',
-                                        borderRadius: 'var(--radius-sm)'
+                                        borderRadius: 'var(--radius-sm)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem'
                                     }}
                                 >
+                                    <Users size={14} />
                                     {trip.available_seats} seats left
                                 </span>
                             </div>

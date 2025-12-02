@@ -1,9 +1,12 @@
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { listContacts, getConversation, sendMessage } from '../controllers/chats.controller.js';
+import { listContacts, getConversation, sendMessage, getUnreadCounts } from '../controllers/chats.controller.js';
 
 const router = Router();
+
+// Get unread counts
+router.get('/unread-counts', requireAuth, getUnreadCounts);
 
 // List chat partners derived from reservations
 router.get('/contacts', requireAuth, listContacts);

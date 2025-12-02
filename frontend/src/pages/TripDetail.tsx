@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/axios';
+import { ArrowRight, Clock, Star, User, Phone, Calendar } from 'lucide-react';
 
 interface TripDetail {
     id: number;
@@ -75,9 +76,16 @@ export default function TripDetails() {
 
     const renderStars = (rating: number) => {
         return (
-            <span style={{ color: 'var(--warning-color)', fontSize: '1.1rem', letterSpacing: '2px' }}>
-                {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
-            </span>
+            <div style={{ display: 'flex', gap: '2px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                        key={star}
+                        size={16}
+                        fill={star <= rating ? 'var(--warning-color)' : 'none'}
+                        color={star <= rating ? 'var(--warning-color)' : 'var(--text-tertiary)'}
+                    />
+                ))}
+            </div>
         );
     };
 
@@ -93,10 +101,11 @@ export default function TripDetails() {
                 <div style={{ marginBottom: '2.5rem' }}>
                     <h3 style={{ fontSize: '1.75rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         {trip.departure_city}
-                        <span style={{ color: 'var(--text-tertiary)', fontSize: '1.5rem' }}>→</span>
+                        <ArrowRight size={24} className="text-tertiary" />
                         {trip.destination_city}
                     </h3>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Calendar size={20} />
                         {new Date(trip.departure_date).toLocaleString(undefined, {
                             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
@@ -116,8 +125,8 @@ export default function TripDetails() {
                     </div>
                     {tripTime && (
                         <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                            <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                                ⏱️ Estimated Duration
+                            <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Clock size={16} /> Estimated Duration
                             </p>
                             <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary-color)', lineHeight: 1 }}>
                                 {tripTime.formatted_duration}
@@ -148,7 +157,9 @@ export default function TripDetails() {
                         </div>
                         <div>
                             <p style={{ marginBottom: 0, fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{trip.driver_name}</p>
-                            <p style={{ marginBottom: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{trip.driver_phone}</p>
+                            <p style={{ marginBottom: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Phone size={14} /> {trip.driver_phone}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -169,7 +180,7 @@ export default function TripDetails() {
                                 alignItems: 'center',
                                 gap: '0.25rem'
                             }}>
-                                {ratingsData.averageRating.toFixed(1)} ★
+                                {ratingsData.averageRating.toFixed(1)} <Star size={14} fill="currentColor" />
                             </span>
                             <span style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
                                 ({ratingsData.totalRatings} {ratingsData.totalRatings === 1 ? 'review' : 'reviews'})
@@ -180,7 +191,9 @@ export default function TripDetails() {
                             {ratingsData.ratings.map((rating) => (
                                 <div key={rating.id} style={{ padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{rating.user_name}</span>
+                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <User size={16} /> {rating.user_name}
+                                        </span>
                                         {renderStars(rating.rating)}
                                     </div>
                                     {rating.comment && (

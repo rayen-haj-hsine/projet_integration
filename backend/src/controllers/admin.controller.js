@@ -89,3 +89,87 @@ export async function getApprovedDrivers(req, res, next) {
         next(err);
     }
 }
+
+/**
+ * GET /api/admin/driver-requests
+ * List all pending driver upgrade requests
+ */
+export async function getDriverRequests(req, res, next) {
+    try {
+        const [rows] = await pool.query(`
+            SELECT 
+                dr.id, dr.user_id, dr.profile_photo, dr.license_document, 
+                dr.status, dr.created_at,
+                u.name, u.email, u.phone, u.role
+            FROM driver_requests dr
+            JOIN users u ON u.id = dr.user_id
+            WHERE dr.status = 'pending'
+            ORDER BY dr.created_at ASC
+        `);
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * PATCH /api/admin/driver-requests/:id/approve
+ * Approve a driver upgrade request
+ */
+export async function approveDriverRequest(req, res, next) {
+    try {
+        const requestId = parseInt(req.params.id, 10);
+
+        // Get the request
+        const [requests] = await pool.query(
+            'SELECT user_id, profile_photo, license_document FROM driver_requests WHERE id = ? AND status = ?',
+            [requestId, 'pending']
+        );
+
+        if (requests.length === 0) {
+            return res.status(404).json({ error: 'Request not found or already processed' });
+        }
+
+        const { user_id, profile_photo, license_document } = requests[0];
+
+        // Update user role to driver and set photos
+        await pool.query(
+            'UPDATE users SET role = ?, profile_photo = ?, license_document = ?, is_verified = 1 WHERE id = ?',
+            ['driver', profile_photo, license_document, user_id]
+        );
+
+        // Mark request as approved
+        await pool.query(
+            'UPDATE driver_requests SET status = ?, reviewed_at = NOW() WHERE id = ?',
+            ['approved', requestId]
+        );
+
+        res.json({ message: 'Driver request approved successfully' });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * PATCH /api/admin/driver-requests/:id/reject
+ * Reject a driver upgrade request
+ */
+export async function rejectDriverRequest(req, res, next) {
+    try {
+        const requestId = parseInt(req.params.id, 10);
+        const { admin_notes } = req.body;
+
+        const [result] = await pool.query(
+            'UPDATE driver_requests SET status = ?, reviewed_at = NOW(), admin_notes = ? WHERE id = ? AND status = ?',
+            ['rejected', admin_notes || null, requestId, 'pending']
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Request not found or already processed' });
+        }
+
+        res.json({ message: 'Driver request rejected' });
+    } catch (err) {
+        next(err);
+    }
+}

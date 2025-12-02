@@ -35,9 +35,10 @@ async function haveReservationLink(userAId, userBId) {
 
 /**
  * List chat contacts for the logged-in user:
- * - If user is a passenger: all drivers from his non-cancelled reservations
- * - If user is a driver: all passengers who reserved his trips (non-cancelled)
- * - If role missing, union of both
+ * - Only shows contacts from ACTIVE trips (pending/confirmed AND not yet departed)
+ * - If user is a passenger: all drivers from active reservations
+ * - If user is a driver: all passengers from active reservations
+ * - Once trip is over, contact disappears from list
  */
 export async function listContacts(req, res, next) {
     try {
@@ -47,27 +48,31 @@ export async function listContacts(req, res, next) {
 
         const contacts = [];
 
-        // As passenger -> drivers
+        // As passenger -> drivers (only from active trips)
         const [drivers] = await pool.query(
             `
       SELECT DISTINCT t.driver_id AS contact_id, u.name, u.email, u.phone
       FROM reservations r
       JOIN trips t ON t.id = r.trip_id
       JOIN users u ON u.id = t.driver_id
-      WHERE r.passenger_id = ? AND r.status IN ('pending','confirmed')
+      WHERE r.passenger_id = ? 
+        AND r.status IN ('pending','confirmed')
+        AND t.departure_date > NOW()
       ORDER BY u.name ASC
       `,
             [myId]
         );
 
-        // As driver -> passengers
+        // As driver -> passengers (only from active trips)
         const [passengers] = await pool.query(
             `
       SELECT DISTINCT r.passenger_id AS contact_id, u.name, u.email, u.phone
       FROM reservations r
       JOIN trips t ON t.id = r.trip_id
       JOIN users u ON u.id = r.passenger_id
-      WHERE t.driver_id = ? AND r.status IN ('pending','confirmed')
+      WHERE t.driver_id = ? 
+        AND r.status IN ('pending','confirmed')
+        AND t.departure_date > NOW()
       ORDER BY u.name ASC
       `,
             [myId]
@@ -111,6 +116,13 @@ export async function getConversation(req, res, next) {
             [myId, otherUserId, otherUserId, myId]
         );
 
+        // Mark messages from the other user as read
+        await pool.query(
+            `UPDATE chats SET is_read = 1 
+             WHERE receiver_id = ? AND sender_id = ? AND is_read = 0`,
+            [myId, otherUserId]
+        );
+
         res.json(msgs);
     } catch (err) {
         next(err);
@@ -142,6 +154,39 @@ export async function sendMessage(req, res, next) {
             receiver_id,
             message,
             created_at: new Date().toISOString()
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Get unread counts for messages and pending reservations
+ */
+export async function getUnreadCounts(req, res, next) {
+    try {
+        const myId = req.user.id;
+
+        // Count unread messages (messages sent to me that I haven't read)
+        const [unreadMsgs] = await pool.query(
+            `SELECT COUNT(DISTINCT sender_id) as unread_chats
+             FROM chats 
+             WHERE receiver_id = ? AND is_read = 0`,
+            [myId]
+        );
+
+        // Count pending reservations for driver's trips
+        const [pendingReservations] = await pool.query(
+            `SELECT COUNT(*) as pending_count
+             FROM reservations r
+             JOIN trips t ON t.id = r.trip_id
+             WHERE t.driver_id = ? AND r.status = 'pending'`,
+            [myId]
+        );
+
+        res.json({
+            unread_chats: unreadMsgs[0]?.unread_chats || 0,
+            pending_reservations: pendingReservations[0]?.pending_count || 0
         });
     } catch (err) {
         next(err);

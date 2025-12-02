@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { showToast } from '../components/Toast';
+import { User as UserIcon, Mail, Phone, Calendar, FileText, Music, Cigarette, PawPrint, ShieldCheck, Edit2, Lock } from 'lucide-react';
 
 type User = {
     id: number;
@@ -66,7 +68,7 @@ export default function Profile() {
                     preferences: prefs
                 });
             } catch (err: any) {
-                alert(err.response?.data?.error ?? 'Failed to load profile');
+                showToast(err.response?.data?.error ?? 'Failed to load profile', 'error');
             } finally {
                 setLoading(false);
             }
@@ -119,10 +121,10 @@ export default function Profile() {
                 })
             );
 
-            alert('Profile updated ✅');
+            showToast('Profile updated ✅', 'success');
             setIsEditing(false);
         } catch (err: any) {
-            alert(err.response?.data?.error ?? 'Update failed');
+            showToast(err.response?.data?.error ?? 'Update failed', 'error');
         } finally {
             setSaving(false);
         }
@@ -130,14 +132,14 @@ export default function Profile() {
 
     const handleVerifyPhone = async () => {
         if (!verificationCode) {
-            alert('Please enter a verification code');
+            showToast('Please enter a verification code', 'error');
             return;
         }
 
         setVerifying(true);
         try {
             const res = await api.post('/auth/me/verify-phone', { code: verificationCode });
-            alert(res.data.message);
+            showToast(res.data.message, 'success');
 
             // Update user state
             if (user) {
@@ -147,7 +149,7 @@ export default function Profile() {
             setShowVerifyModal(false);
             setVerificationCode('');
         } catch (err: any) {
-            alert(err.response?.data?.error ?? 'Verification failed');
+            showToast(err.response?.data?.error ?? 'Verification failed', 'error');
         } finally {
             setVerifying(false);
         }
@@ -166,15 +168,21 @@ export default function Profile() {
                 {!isEditing ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Name:</span>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <UserIcon size={16} /> Name:
+                            </span>
                             <span style={{ fontWeight: 600 }}>{user.name}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Email:</span>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Mail size={16} /> Email:
+                            </span>
                             <span>{user.email}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Phone:</span>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Phone size={16} /> Phone:
+                            </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span>{user.phone ?? '-'}</span>
                                 {user.phone && (
@@ -185,9 +193,12 @@ export default function Profile() {
                                             padding: '0.25rem 0.5rem',
                                             borderRadius: '12px',
                                             fontSize: '0.75rem',
-                                            fontWeight: 600
+                                            fontWeight: 600,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.25rem'
                                         }}>
-                                            ✓ Verified
+                                            <ShieldCheck size={12} /> Verified
                                         </span>
                                     ) : (
                                         <button
@@ -215,13 +226,17 @@ export default function Profile() {
                         </div>
                         {user.created_at && (
                             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Joined:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Calendar size={16} /> Joined:
+                                </span>
                                 <span>{new Date(user.created_at).toLocaleDateString()}</span>
                             </div>
                         )}
                         {user.bio && (
                             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1rem', alignItems: 'start' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Bio:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <FileText size={16} /> Bio:
+                                </span>
                                 <span style={{ whiteSpace: 'pre-wrap' }}>{user.bio}</span>
                             </div>
                         )}
@@ -233,9 +248,9 @@ export default function Profile() {
                                         const prefs = typeof user.preferences === 'string' ? JSON.parse(user.preferences) : user.preferences;
                                         return (
                                             <>
-                                                {prefs.music && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🎵 Music</span>}
-                                                {prefs.smoking && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🚬 Smoking</span>}
-                                                {prefs.pets && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem' }}>🐾 Pets</span>}
+                                                {prefs.music && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Music size={14} /> Music</span>}
+                                                {prefs.smoking && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Cigarette size={14} /> Smoking</span>}
+                                                {prefs.pets && <span style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', padding: '0.25rem 0.75rem', borderRadius: '15px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><PawPrint size={14} /> Pets</span>}
                                                 {!prefs.music && !prefs.smoking && !prefs.pets && <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>None selected</span>}
                                             </>
                                         );
@@ -245,8 +260,12 @@ export default function Profile() {
                         )}
 
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                            <button onClick={() => setIsEditing(true)} className="btn">Edit Profile</button>
-                            <button onClick={() => navigate('/profile/password')} className="btn btn-secondary">Change Password</button>
+                            <button onClick={() => setIsEditing(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Edit2 size={16} /> Edit Profile
+                            </button>
+                            <button onClick={() => navigate('/profile/password')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Lock size={16} /> Change Password
+                            </button>
                         </div>
                     </div>
                 ) : (
@@ -314,10 +333,13 @@ export default function Profile() {
                                         backgroundColor: form.preferences.music ? 'var(--primary-color)' : 'transparent',
                                         color: form.preferences.music ? 'white' : 'var(--text-primary)',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
                                     }}
                                 >
-                                    🎵 Music
+                                    <Music size={16} /> Music
                                 </button>
                                 <button
                                     type="button"
@@ -329,10 +351,13 @@ export default function Profile() {
                                         backgroundColor: form.preferences.smoking ? 'var(--primary-color)' : 'transparent',
                                         color: form.preferences.smoking ? 'white' : 'var(--text-primary)',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
                                     }}
                                 >
-                                    🚬 Smoking
+                                    <Cigarette size={16} /> Smoking
                                 </button>
                                 <button
                                     type="button"
@@ -344,10 +369,13 @@ export default function Profile() {
                                         backgroundColor: form.preferences.pets ? 'var(--primary-color)' : 'transparent',
                                         color: form.preferences.pets ? 'white' : 'var(--text-primary)',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
                                     }}
                                 >
-                                    🐾 Pets
+                                    <PawPrint size={16} /> Pets
                                 </button>
                             </div>
                         </div>

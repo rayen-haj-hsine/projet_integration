@@ -2,6 +2,7 @@
 import { createContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import ToastContainer from './components/Toast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Trips from './pages/Trips';
@@ -72,6 +73,7 @@ function App() {
         </div>
 
         <Navbar />
+        <ToastContainer />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/trips" element={<Trips />} />

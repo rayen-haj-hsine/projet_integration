@@ -214,3 +214,53 @@ export async function verifyPhone(req, res, next) {
         next(err);
     }
 }
+
+/**
+ * Request Driver Status
+ * Allows passengers to request upgrade to driver role with photo + license upload
+ */
+export async function requestDriverStatus(req, res, next) {
+    try {
+        const userId = req.user.id;
+
+        // Check if user is already a driver
+        const [userRows] = await pool.query('SELECT role FROM users WHERE id = ?', [userId]);
+        if (userRows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+        if (userRows[0].role === 'driver') {
+            return res.status(400).json({ error: 'You are already a driver' });
+        }
+
+        // Check if there's already a pending request
+        const [existingRequest] = await pool.query(
+            'SELECT id, status FROM driver_requests WHERE user_id = ? AND status = ?',
+            [userId, 'pending']
+        );
+        if (existingRequest.length > 0) {
+            return res.status(400).json({ error: 'You already have a pending driver request' });
+        }
+
+        // Validate files
+        if (!req.files || !req.files.profile_photo || !req.files.license_document) {
+            return res.status(400).json({
+                error: 'Both profile photo and license document are required'
+            });
+        }
+
+        const profilePhoto = req.files.profile_photo[0].path;
+        const licenseDocument = req.files.license_document[0].path;
+
+        // Create driver request
+        await pool.query(
+            'INSERT INTO driver_requests (user_id, profile_photo, license_document) VALUES (?, ?, ?)',
+            [userId, profilePhoto, licenseDocument]
+        );
+
+        res.status(201).json({
+            message: 'Driver request submitted successfully. Waiting for admin approval.',
+            status: 'pending'
+        });
+    } catch (err) {
+        next(err);
+    }
+}

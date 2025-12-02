@@ -232,8 +232,8 @@ export async function deleteTrip(req, res, next) {
 
             for (const reservation of reservations) {
                 await pool.query(
-                    'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "trip_deletion", 0)',
-                    [reservation.passenger_id, notificationMessage]
+                    'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, ?, 0)',
+                    [reservation.passenger_id, notificationMessage, 'trip_deletion']
                 );
             }
 
@@ -324,8 +324,8 @@ export async function updateTrip(req, res, next) {
                 const message = `Trip update: ${trip.departure_city} to ${trip.destination_city}. ${changes.join(', ')}`;
                 for (const r of reservations) {
                     await pool.query(
-                        'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, "trip_update", 0)',
-                        [r.passenger_id, message]
+                        'INSERT INTO notifications (user_id, message, type, is_read) VALUES (?, ?, ?, 0)',
+                        [r.passenger_id, message, 'trip_update']
                     );
                 }
             }
@@ -424,7 +424,8 @@ export async function getTripHistory(req, res, next) {
             // Passengers: trips they reserved in the past
             [rows] = await pool.query(
                 `SELECT t.id, t.departure_city, t.destination_city, t.departure_date, t.price, t.status as trip_status,
-                        r.status as reservation_status, r.created_at as reservation_date
+                        r.id as reservation_id, r.status as reservation_status, r.created_at as reservation_date,
+                        r.rating, r.rating_comment
                  FROM reservations r
                  JOIN trips t ON t.id = r.trip_id
                  WHERE r.passenger_id = ? AND t.departure_date < NOW()
